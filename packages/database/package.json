@@ -17,6 +17,7 @@
     "format": "prisma format",
     "generate": "prisma generate",
     "studio": "prisma studio",
+    "seed": "tsx prisma/seed.ts",
     "build": "prisma generate && tsc && tsc-alias"
   },
   "dependencies": {

@@ -13,7 +13,11 @@ import { Route as AuthRouteImport } from './routes/_auth'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as AppIndexRouteImport } from './routes/_app/index'
 import { Route as AuthLoginRouteImport } from './routes/_auth/login'
+import { Route as AppSubscriptionRouteImport } from './routes/_app/subscription'
 import { Route as AppDashboardRouteImport } from './routes/_app/dashboard'
+import { Route as AppBillingRouteImport } from './routes/_app/billing'
+import { Route as AppPaidRouteImport } from './routes/_app/_paid'
+import { Route as AppPaidPremiumRouteImport } from './routes/_app/_paid/premium'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/_auth',
@@ -33,42 +37,81 @@ const AuthLoginRoute = AuthLoginRouteImport.update({
   path: '/login',
   getParentRoute: () => AuthRoute,
 } as any)
+const AppSubscriptionRoute = AppSubscriptionRouteImport.update({
+  id: '/subscription',
+  path: '/subscription',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppDashboardRoute = AppDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
   getParentRoute: () => AppRoute,
 } as any)
+const AppBillingRoute = AppBillingRouteImport.update({
+  id: '/billing',
+  path: '/billing',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppPaidRoute = AppPaidRouteImport.update({
+  id: '/_paid',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppPaidPremiumRoute = AppPaidPremiumRouteImport.update({
+  id: '/premium',
+  path: '/premium',
+  getParentRoute: () => AppPaidRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
+  '/billing': typeof AppBillingRoute
   '/dashboard': typeof AppDashboardRoute
+  '/subscription': typeof AppSubscriptionRoute
   '/login': typeof AuthLoginRoute
+  '/premium': typeof AppPaidPremiumRoute
 }
 export interface FileRoutesByTo {
   '/': typeof AppIndexRoute
+  '/billing': typeof AppBillingRoute
   '/dashboard': typeof AppDashboardRoute
+  '/subscription': typeof AppSubscriptionRoute
   '/login': typeof AuthLoginRoute
+  '/premium': typeof AppPaidPremiumRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_app': typeof AppRouteWithChildren
   '/_auth': typeof AuthRouteWithChildren
+  '/_app/_paid': typeof AppPaidRouteWithChildren
+  '/_app/billing': typeof AppBillingRoute
   '/_app/dashboard': typeof AppDashboardRoute
+  '/_app/subscription': typeof AppSubscriptionRoute
   '/_auth/login': typeof AuthLoginRoute
   '/_app/': typeof AppIndexRoute
+  '/_app/_paid/premium': typeof AppPaidPremiumRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/dashboard' | '/login'
+  fullPaths:
+    | '/'
+    | '/billing'
+    | '/dashboard'
+    | '/subscription'
+    | '/login'
+    | '/premium'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/dashboard' | '/login'
+  to: '/' | '/billing' | '/dashboard' | '/subscription' | '/login' | '/premium'
   id:
     | '__root__'
     | '/_app'
     | '/_auth'
+    | '/_app/_paid'
+    | '/_app/billing'
     | '/_app/dashboard'
+    | '/_app/subscription'
     | '/_auth/login'
     | '/_app/'
+    | '/_app/_paid/premium'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -106,6 +149,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthLoginRouteImport
       parentRoute: typeof AuthRoute
     }
+    '/_app/subscription': {
+      id: '/_app/subscription'
+      path: '/subscription'
+      fullPath: '/subscription'
+      preLoaderRoute: typeof AppSubscriptionRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/dashboard': {
       id: '/_app/dashboard'
       path: '/dashboard'
@@ -113,16 +163,54 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppDashboardRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/billing': {
+      id: '/_app/billing'
+      path: '/billing'
+      fullPath: '/billing'
+      preLoaderRoute: typeof AppBillingRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/_paid': {
+      id: '/_app/_paid'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AppPaidRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/_paid/premium': {
+      id: '/_app/_paid/premium'
+      path: '/premium'
+      fullPath: '/premium'
+      preLoaderRoute: typeof AppPaidPremiumRouteImport
+      parentRoute: typeof AppPaidRoute
+    }
   }
 }
 
+interface AppPaidRouteChildren {
+  AppPaidPremiumRoute: typeof AppPaidPremiumRoute
+}
+
+const AppPaidRouteChildren: AppPaidRouteChildren = {
+  AppPaidPremiumRoute: AppPaidPremiumRoute,
+}
+
+const AppPaidRouteWithChildren =
+  AppPaidRoute._addFileChildren(AppPaidRouteChildren)
+
 interface AppRouteChildren {
+  AppPaidRoute: typeof AppPaidRouteWithChildren
+  AppBillingRoute: typeof AppBillingRoute
   AppDashboardRoute: typeof AppDashboardRoute
+  AppSubscriptionRoute: typeof AppSubscriptionRoute
   AppIndexRoute: typeof AppIndexRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
+  AppPaidRoute: AppPaidRouteWithChildren,
+  AppBillingRoute: AppBillingRoute,
   AppDashboardRoute: AppDashboardRoute,
+  AppSubscriptionRoute: AppSubscriptionRoute,
   AppIndexRoute: AppIndexRoute,
 }
 
