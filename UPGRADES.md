@@ -220,3 +220,37 @@ ativo. O backend é a fonte da verdade e expõe o estado em `gatingEnabled`
   (`SubscriptionService.getActive`). Use isso para liberar features.
 
 Ao mudar/adicionar rota, rode `pnpm openapi && pnpm api-client`.
+
+---
+
+## Bloquear merge sem CI verde (branch protection)
+
+A CI (`.github/workflows/ci.yml`) já expõe um check único **`CHECK`** que só fica
+verde se `quality` + `e2e` + `migrations` passarem. Falta só **exigir** esse
+check para bloquear o merge — e é aqui que entra a pegadinha de plano.
+
+> ⚠️ **Requer repo público OU plano pago.** Branch protection / rulesets em repo
+> **privado** precisa de **GitHub Team** (organização) ou **Pro** (conta pessoal).
+> Em repo **público** é grátis. No plano grátis + privado, a CI ainda roda e
+> mostra ✓/✗ no PR, mas o GitHub não bloqueia o botão de merge.
+
+Quando for ativar (repo público ou plano pago):
+
+**Pela UI** — `Settings → Rules → Rulesets → New branch ruleset`:
+
+1. **Enforcement status: Active** (não deixe em *Evaluate/Disabled*).
+2. **Target branches:** `main`.
+3. ✅ *Require a pull request before merging*.
+4. ✅ *Require status checks to pass* → **Add checks** → **`CHECK`**.
+5. (Opcional) ✅ *Require branches to be up to date before merging*.
+
+**Ou via `gh`** (admin do repo):
+
+```bash
+echo '{"required_status_checks":{"strict":true,"contexts":["CHECK"]},"enforce_admins":true,"required_pull_request_reviews":null,"restrictions":null}' \
+  | gh api -X PUT repos/<owner>/<repo>/branches/main/protection --input -
+```
+
+`enforce_admins: true` aplica a regra também a admins (sem isso, admin mergeia
+mesmo com check vermelho). Adicionou/renomeou jobs depois? Não precisa mexer na
+regra — ela exige só o `CHECK`, que agrega todos os jobs.
