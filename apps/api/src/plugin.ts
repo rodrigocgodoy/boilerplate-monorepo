@@ -25,6 +25,8 @@ declare module 'fastify' {
     lang: Locale
     /** Função de tradução fixada no idioma da request */
     t: AppTFunction
+    /** Corpo cru da requisição (string), usado na validação HMAC do webhook */
+    rawBody?: string
   }
 }
 
@@ -32,6 +34,27 @@ export const backendPlugin = tp(async app => {
   // Validator/serializer do Zod
   app.setValidatorCompiler(validatorCompiler)
   app.setSerializerCompiler(serializerCompiler)
+
+  // Mantém o parse JSON padrão, mas preserva o corpo cru em request.rawBody
+  // (necessário para validar a assinatura HMAC do webhook sobre os bytes
+  // exatos recebidos — re-serializar mudaria a string e quebraria o HMAC).
+  app.addContentTypeParser(
+    'application/json',
+    { parseAs: 'string' },
+    (request, body: string, done) => {
+      request.rawBody = body
+      if (!body) {
+        done(null, undefined)
+        return
+      }
+      try {
+        done(null, JSON.parse(body))
+      } catch (err) {
+        ;(err as { statusCode?: number }).statusCode = 400
+        done(err as Error, undefined)
+      }
+    },
+  )
 
   // i18n: resolve o idioma por request (Accept-Language) e expõe request.t.
   // Defaults são sobrescritos no onRequest abaixo, a cada request.
