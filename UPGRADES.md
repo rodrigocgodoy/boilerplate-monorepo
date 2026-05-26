@@ -92,3 +92,131 @@ O boilerplate usa só email/senha + Google. Para multi-tenant, RBAC ou 2FA,
 adicione os plugins em `better-auth/configs.ts` (server) e `auth-client.ts`
 (client), depois rode `pnpm auth:generate` para atualizar o schema do Prisma e
 `pnpm db:migrate`. Consulte as skills em `.claude/skills/*-best-practices`.
+
+---
+
+## AbacatePay (pagamentos — PIX e cartão)
+
+Já vem com um módulo de pagamento (`apps/api/src/modules/payment`) que envolve o
+SDK oficial `abacatepay-nodejs-sdk`. As rotas existem sempre (para o Kubb gerar
+os hooks), mas só ficam ativas quando a API key está presente — sem a key, elas
+respondem `503`. Para habilitar:
+
+1. **.env** — preencha `ABACATEPAY_API_KEY` (use a key de _devMode_ para testes)
+   e `ABACATEPAY_WEBHOOK_SECRET` (o segredo que você define no painel).
+2. Reinicie a API. Sem mudança de código, os endpoints passam a funcionar:
+   - `POST /payments/pix` — **checkout transparente PIX**: cria o QR Code e o
+     copia-e-cola (`brCode`/`brCodeBase64`) para você renderizar na sua UI.
+   - `POST /payments/checkout` — checkout hospedado (PIX + cartão); devolve a
+     `url` de pagamento do AbacatePay.
+   - `GET /payments/:id` — status da cobrança (reconsulta PIX pendente).
+   - `POST /payments/webhook` — público; valida `?webhookSecret=...` e atualiza
+     o status local. Cadastre `https://SEU_HOST/payments/webhook?webhookSecret=...`
+     no painel do AbacatePay. **A fonte da verdade do pagamento é o webhook.**
+3. **Frontend** — página de exemplo em `apps/app/src/routes/_app/billing.tsx`
+   (link no dashboard) usando os hooks gerados `usePostPaymentsPix` e
+   `useGetPaymentsId`.
+
+**Persistência:** o model `Payments` (em `packages/database`) espelha as cobranças
+localmente. Fica fora do escopo do `pnpm auth:generate` (sem relação formal com
+`Users`, só uma coluna `userId` indexada), então o CLI do Better Auth não o
+remove ao regenerar o schema.
+
+**Limitação conhecida:** o SDK 1.6.0 não expõe o _checkout transparente de
+cartão_ (`POST /transparents/create` da API). O fluxo de cartão aqui passa pelo
+checkout hospedado (`billing.create`, retorna `url`). Para cartão 100%
+transparente na sua própria UI, chame esse endpoint cru direto e estenda o
+`PaymentService` — o ponto de extensão está pronto.
+
+Ao mudar/adicionar rota de pagamento, rode `pnpm openapi && pnpm api-client`
+para regenerar os hooks.
+
+---
+
+## Assinaturas / planos SaaS (AbacatePay v2)
+
+Modelo de assinatura recorrente com **planos**, **estado da assinatura** ("tem
+plano ativo?") e **histórico de pagamentos**. O domínio é gateway-agnóstico
+(`Plans` → `Subscriptions` → `Payments`); a integração usa a **API v2 de
+assinaturas** do AbacatePay (auto-cobrança nativa).
+
+### Modelos (`packages/database`)
+
+- **`Plans`** — catálogo. Cada plano mapeia para um **produto no AbacatePay**
+  criado com um `cycle` (WEEKLY/MONTHLY/SEMIANNUALLY/ANNUALLY). Guarde o id do
+  produto (`prod_...`) em `externalProductId`.
+- **`Subscriptions`** — `ownerId` + `ownerType` (`USER` hoje; pronto para
+  `ORGANIZATION`), `planId`, `status` (INCOMPLETE/TRIALING/ACTIVE/PAST_DUE/
+  CANCELLED/EXPIRED), `currentPeriodEnd`, etc. Sem relação formal com `Users`
+  (sobrevive ao `auth:generate`).
+- **`Payments`** — ganhou `subscriptionId`; cobranças recorrentes entram aqui
+  com `kind = "SUBSCRIPTION"`.
+
+### Setup
+
+1. **Planos** — `pnpm db:seed` cria 3 planos de exemplo (`starter`,
+   `pro-monthly`, `pro-annual`). Edite `packages/database/prisma/seed.ts`.
+2. **Produtos no AbacatePay** — crie um produto com `cycle` por plano pago e
+   coloque o `prod_...` em `Plans.externalProductId` (sem ele, `POST
+   /subscription` responde 503 `plan_not_linked`).
+3. **Webhook** — o mesmo endpoint `POST /payments/webhook` despacha os eventos
+   `subscription.{trial_started,completed,renewed,cancelled}` para o
+   `SubscriptionService`, que dirige o estado e registra o histórico.
+
+### Segurança do webhook
+
+O endpoint aceita a chamada se **a assinatura HMAC for válida OU o segredo da
+query bater** (configure ao menos um; sem nenhum, responde 401):
+
+- **`X-Webhook-Signature` (HMAC-SHA256, base64 do corpo RAW)** — garante
+  integridade. A chave pública padrão do AbacatePay já vem embutida; sobrescreva
+  com `ABACATEPAY_WEBHOOK_PUBLIC_KEY` se ela for rotacionada. A validação usa
+  `crypto.timingSafeEqual` e o **corpo cru** (capturado em `request.rawBody` por
+  um content-type parser em `plugin.ts` — re-serializar quebraria o HMAC).
+- **`?webhookSecret=...` (`ABACATEPAY_WEBHOOK_SECRET`)** — âncora de
+  autenticidade (só você e o AbacatePay conhecem).
+
+### Endpoints (tag `Subscription` / `Payment`)
+
+- `GET /plans` — catálogo de planos.
+- `GET /subscription` — assinatura atual + `isActive` (= tem plano pago).
+- `POST /subscription` `{ planSlug }` — assina; devolve a `url` de checkout.
+- `POST /subscription/cancel` — cancela (efeito imediato).
+- `GET /payments` — histórico de pagamentos do usuário.
+
+Frontend de exemplo em `apps/app/src/routes/_app/subscription.tsx` (planos,
+plano atual, cancelar e histórico) usando os hooks gerados (`useGetPlans`,
+`useGetSubscription`, `usePostSubscription`, `useGetPayments`).
+
+### Bloqueio de features por plano
+
+Controlado por **uma única config**: `REQUIRE_ACTIVE_PLAN` (env do backend).
+`false` (default) = nada é bloqueado; `true` = features guardadas exigem plano
+ativo. O backend é a fonte da verdade e expõe o estado em `gatingEnabled`
+(no `GET /subscription`), que o front consome.
+
+- **Servidor (barreira real):** `requireActivePlan` — um `preHandler` em
+  `apps/api/src/modules/subscription/guard.ts`. Sempre exige login (401); com
+  gating ligado e sem plano ativo, responde **402**. Use em qualquer rota:
+  ```ts
+  scope.get('/premium', { preHandler: requireActivePlan, schema }, handler)
+  ```
+  Rota de exemplo: `GET /premium`.
+- **Front (só UX):** o layout pathless `apps/app/src/routes/_app/_paid.tsx`.
+  Qualquer rota em `_app/_paid/*` herda o guard: se `gatingEnabled && !isActive`,
+  redireciona para `/subscription`. Exemplo: `_app/_paid/premium.tsx`.
+
+> O guard do front é conveniência; **nunca** confie nele para segurança — a
+> proteção real é o `requireActivePlan` no backend.
+
+### Pontos de atenção
+
+- **v2 fora do SDK:** o SDK 1.6.0 não expõe assinaturas, então a chamada é crua
+  e fica isolada em `apps/api/src/modules/subscription/abacatepay-v2.ts`. Se a
+  AbacatePay mudar o contrato, ajuste só esse arquivo.
+- **Webhook seguro:** valida `X-Webhook-Signature` (HMAC-SHA256 do corpo raw,
+  `timingSafeEqual`) OU o `?webhookSecret=` — ver "Segurança do webhook" acima.
+- **"Plano ativo"** = `status` ACTIVE/TRIALING e `currentPeriodEnd` no futuro
+  (`SubscriptionService.getActive`). Use isso para liberar features.
+
+Ao mudar/adicionar rota, rode `pnpm openapi && pnpm api-client`.

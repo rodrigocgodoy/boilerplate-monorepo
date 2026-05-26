@@ -15,6 +15,7 @@
     "dep-restart": "docker compose restart",
     "db:generate": "pnpm --filter @repo/database generate",
     "db:migrate": "pnpm --filter @repo/database dev",
+    "db:seed": "pnpm --filter @repo/database seed",
     "db:studio": "pnpm --filter @repo/database studio",
     "auth:generate": "pnpm --filter @repo/api auth:generate",
     "openapi": "pnpm --filter @repo/api exec tsx src/scripts/generate-openapi.ts",

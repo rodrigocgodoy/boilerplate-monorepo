@@ -7,7 +7,14 @@ export const defaultLocale: Locale = 'pt-BR'
 export const fallbackLocale: Locale = 'pt-BR'
 
 /** Namespaces das mensagens (agrupamento por área) */
-export const namespaces = ['common', 'auth', 'validation', 'dashboard'] as const
+export const namespaces = [
+  'common',
+  'auth',
+  'validation',
+  'dashboard',
+  'payment',
+  'subscription',
+] as const
 
 export type Namespace = (typeof namespaces)[number]
 

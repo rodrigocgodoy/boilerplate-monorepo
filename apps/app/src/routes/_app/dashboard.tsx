@@ -10,7 +10,7 @@ import {
 import { Skeleton } from '@repo/ui/components/skeleton'
 import { authClient } from '@repo/utils/auth-client'
 import { useQueryClient } from '@tanstack/react-query'
-import { createFileRoute, useRouter } from '@tanstack/react-router'
+import { createFileRoute, Link, useRouter } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { LanguageSwitcher } from '@/components/language-switcher'
 
@@ -19,7 +19,12 @@ export const Route = createFileRoute('/_app/dashboard')({
 })
 
 function Dashboard() {
-  const { t, i18n } = useTranslation(['dashboard', 'common'])
+  const { t, i18n } = useTranslation([
+    'dashboard',
+    'common',
+    'payment',
+    'subscription',
+  ])
   const router = useRouter()
   const queryClient = useQueryClient()
   const { data, isLoading } = useGetMe()
@@ -36,6 +41,12 @@ function Dashboard() {
       <header className="flex items-center justify-between gap-3">
         <h1 className="font-semibold text-2xl">{t('title')}</h1>
         <div className="flex items-center gap-2">
+          <Button asChild variant="outline" size="sm">
+            <Link to="/subscription">{t('subscription:title')}</Link>
+          </Button>
+          <Button asChild variant="outline" size="sm">
+            <Link to="/billing">{t('payment:title')}</Link>
+          </Button>
           <LanguageSwitcher />
           <Button variant="outline" size="sm" onClick={handleSignOut}>
             {t('common:signOut')}
