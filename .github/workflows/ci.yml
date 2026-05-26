@@ -1,0 +1,148 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Cancela execuções antigas do mesmo ref quando um novo push chega.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    name: Lint · Types · Test · Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      # .env de dev (secrets fake) — o build/lint/test não acessam o banco.
+      - run: cp .env.example .env
+
+      - run: pnpm install --frozen-lockfile
+
+      # Cache do Turborepo entre execuções.
+      - name: Cache Turborepo
+        uses: actions/cache@v4
+        with:
+          path: .turbo
+          key: turbo-${{ runner.os }}-${{ github.sha }}
+          restore-keys: turbo-${{ runner.os }}-
+
+      - name: Lint (Biome)
+        run: pnpm lint
+
+      # `build` roda tsc em api/app/database/api-client e, via o tsc do app/api,
+      # alcança o source de ui/i18n/utils — cobre o typecheck do monorepo.
+      - name: Build (typecheck + bundle)
+        run: pnpm build
+
+      - name: Test (Vitest)
+        run: pnpm test
+
+  e2e:
+    name: E2E (Playwright)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - run: cp .env.example .env
+
+      - run: pnpm install --frozen-lockfile
+
+      # Gera os hooks do Kubb (packages/api-client/gen é gitignored) — o app
+      # importa @repo/api-client/hooks ao subir o dev server.
+      - name: Gerar api-client
+        run: pnpm --filter @repo/api-client build
+
+      - name: Instalar browser do Playwright
+        run: pnpm --filter app exec playwright install --with-deps chromium
+
+      # O webServer do Playwright sobe o Vite; com a API fora, o login renderiza.
+      - name: Rodar E2E
+        run: pnpm test:e2e
+
+      - name: Upload do relatório (em falha)
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: apps/app/playwright-report
+          retention-days: 7
+
+  migrations:
+    name: Migrations (apply + drift)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: boilerplate
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      # DATABASE_URL do .env.example já aponta para localhost:5432/boilerplate,
+      # que casa com o serviço Postgres acima.
+      - run: cp .env.example .env
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Gerar Prisma Client
+        run: pnpm db:generate
+
+      - name: Aplicar migrations (do zero)
+        run: pnpm --filter @repo/database exec prisma migrate deploy
+
+      - name: Conferir status
+        run: pnpm --filter @repo/database exec prisma migrate status
+
+      # Drift: falha (exit 2) se schema.prisma mudou sem uma migration nova.
+      - name: Checar drift (schema vs migrations)
+        run: >-
+          pnpm --filter @repo/database exec prisma migrate diff
+          --from-config-datasource
+          --to-schema prisma/schema.prisma
+          --exit-code
+
+      - name: Validar seed
+        run: pnpm db:seed
