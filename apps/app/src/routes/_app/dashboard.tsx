@@ -11,12 +11,15 @@ import { Skeleton } from '@repo/ui/components/skeleton'
 import { authClient } from '@repo/utils/auth-client'
 import { useQueryClient } from '@tanstack/react-query'
 import { createFileRoute, useRouter } from '@tanstack/react-router'
+import { useTranslation } from 'react-i18next'
+import { LanguageSwitcher } from '@/components/language-switcher'
 
 export const Route = createFileRoute('/_app/dashboard')({
   component: Dashboard,
 })
 
 function Dashboard() {
+  const { t, i18n } = useTranslation(['dashboard', 'common'])
   const router = useRouter()
   const queryClient = useQueryClient()
   const { data, isLoading } = useGetMe()
@@ -30,20 +33,20 @@ function Dashboard() {
 
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 p-6">
-      <header className="flex items-center justify-between">
-        <h1 className="font-semibold text-2xl">Dashboard</h1>
-        <Button variant="outline" size="sm" onClick={handleSignOut}>
-          Sair
-        </Button>
+      <header className="flex items-center justify-between gap-3">
+        <h1 className="font-semibold text-2xl">{t('title')}</h1>
+        <div className="flex items-center gap-2">
+          <LanguageSwitcher />
+          <Button variant="outline" size="sm" onClick={handleSignOut}>
+            {t('common:signOut')}
+          </Button>
+        </div>
       </header>
 
       <Card>
         <CardHeader>
-          <CardTitle>Usuário autenticado</CardTitle>
-          <CardDescription>
-            Dados vindos de <code>GET /me</code> via hook gerado pelo Kubb (
-            <code>useGetMe</code>).
-          </CardDescription>
+          <CardTitle>{t('authenticatedUser')}</CardTitle>
+          <CardDescription>{t('description')}</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-2 text-sm">
           {isLoading || !me ? (
@@ -53,14 +56,16 @@ function Dashboard() {
             </>
           ) : (
             <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2">
-              <dt className="text-muted-foreground">Nome</dt>
+              <dt className="text-muted-foreground">{t('fields.name')}</dt>
               <dd>{me.name}</dd>
-              <dt className="text-muted-foreground">Email</dt>
+              <dt className="text-muted-foreground">{t('fields.email')}</dt>
               <dd>{me.email}</dd>
-              <dt className="text-muted-foreground">ID</dt>
+              <dt className="text-muted-foreground">{t('fields.id')}</dt>
               <dd className="font-mono text-xs">{me.id}</dd>
-              <dt className="text-muted-foreground">Criado em</dt>
-              <dd>{new Date(me.createdAt).toLocaleString('pt-BR')}</dd>
+              <dt className="text-muted-foreground">{t('fields.createdAt')}</dt>
+              <dd>
+                {new Date(me.createdAt).toLocaleString(i18n.resolvedLanguage)}
+              </dd>
             </dl>
           )}
         </CardContent>

@@ -4,6 +4,7 @@ import {
   Card,
   CardContent,
   CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
 } from '@repo/ui/components/card'
@@ -17,27 +18,46 @@ import {
   TabsTrigger,
 } from '@repo/ui/components/tabs'
 import { authClient } from '@repo/utils/auth-client'
+import { useQueryClient } from '@tanstack/react-query'
 import { useRouter } from '@tanstack/react-router'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
+import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { z } from 'zod'
+import { LanguageSwitcher } from '@/components/language-switcher'
 
-const signInSchema = z.object({
-  email: z.email('Email inválido'),
-  password: z.string().min(8, 'Mínimo de 8 caracteres'),
-})
-
-const signUpSchema = signInSchema.extend({
-  name: z.string().min(2, 'Informe seu nome'),
-})
-
-type SignInValues = z.infer<typeof signInSchema>
-type SignUpValues = z.infer<typeof signUpSchema>
+type SignInValues = { email: string; password: string }
+type SignUpValues = SignInValues & { name: string }
 
 export function LoginForm() {
+  const { t } = useTranslation(['auth', 'validation'])
   const router = useRouter()
+  const queryClient = useQueryClient()
   const [googleLoading, setGoogleLoading] = useState(false)
+
+  // Após autenticar, remove a sessão do cache (ensureQueryData só revalida
+  // dado stale com revalidateIfStale; removendo, ele é forçado a refazer o
+  // fetch e os guards _app/_auth enxergam a sessão nova) e navega.
+  async function goToDashboard() {
+    queryClient.removeQueries({ queryKey: ['session'] })
+    await router.navigate({ to: '/dashboard' })
+  }
+
+  const signInSchema = useMemo(
+    () =>
+      z.object({
+        email: z.email(t('validation:email')),
+        password: z.string().min(8, t('validation:passwordMin', { count: 8 })),
+      }),
+    [t],
+  )
+
+  const signUpSchema = useMemo(
+    () =>
+      signInSchema.extend({ name: z.string().min(2, t('validation:nameMin')) }),
+    [signInSchema, t],
+  )
 
   const signInForm = useForm<SignInValues>({
     resolver: zodResolver(signInSchema),
@@ -55,10 +75,10 @@ export function LoginForm() {
       password: values.password,
     })
     if (error) {
-      toast.error(error.message ?? 'Falha ao entrar')
+      toast.error(error.message ?? t('errors.signInFailed'))
       return
     }
-    await router.navigate({ to: '/dashboard' })
+    await goToDashboard()
   }
 
   async function onSignUp(values: SignUpValues) {
@@ -68,10 +88,10 @@ export function LoginForm() {
       password: values.password,
     })
     if (error) {
-      toast.error(error.message ?? 'Falha ao criar conta')
+      toast.error(error.message ?? t('errors.signUpFailed'))
       return
     }
-    await router.navigate({ to: '/dashboard' })
+    await goToDashboard()
   }
 
   async function onGoogle() {
@@ -81,7 +101,7 @@ export function LoginForm() {
       callbackURL: `${window.location.origin}/dashboard`,
     })
     if (error) {
-      toast.error('Google não configurado. Veja UPGRADES.md.')
+      toast.error(t('googleNotConfigured'))
       setGoogleLoading(false)
     }
   }
@@ -89,17 +109,15 @@ export function LoginForm() {
   return (
     <Card className="w-full max-w-sm">
       <CardHeader className="text-center">
-        <CardTitle className="text-xl">Bem-vindo</CardTitle>
-        <CardDescription>
-          Entre ou crie sua conta para continuar
-        </CardDescription>
+        <CardTitle className="text-xl">{t('welcome')}</CardTitle>
+        <CardDescription>{t('subtitle')}</CardDescription>
       </CardHeader>
 
       <CardContent className="flex flex-col gap-6">
         <Tabs defaultValue="signin">
           <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="signin">Entrar</TabsTrigger>
-            <TabsTrigger value="signup">Criar conta</TabsTrigger>
+            <TabsTrigger value="signin">{t('tabs.signIn')}</TabsTrigger>
+            <TabsTrigger value="signup">{t('tabs.signUp')}</TabsTrigger>
           </TabsList>
 
           <TabsContent value="signin" className="mt-4">
@@ -108,7 +126,7 @@ export function LoginForm() {
               className="flex flex-col gap-4"
             >
               <div className="flex flex-col gap-2">
-                <Label htmlFor="signin-email">Email</Label>
+                <Label htmlFor="signin-email">{t('fields.email')}</Label>
                 <Input
                   id="signin-email"
                   type="email"
@@ -122,7 +140,7 @@ export function LoginForm() {
                 )}
               </div>
               <div className="flex flex-col gap-2">
-                <Label htmlFor="signin-password">Senha</Label>
+                <Label htmlFor="signin-password">{t('fields.password')}</Label>
                 <Input
                   id="signin-password"
                   type="password"
@@ -139,7 +157,9 @@ export function LoginForm() {
                 type="submit"
                 disabled={signInForm.formState.isSubmitting}
               >
-                {signInForm.formState.isSubmitting ? 'Entrando...' : 'Entrar'}
+                {signInForm.formState.isSubmitting
+                  ? t('actions.signingIn')
+                  : t('actions.signIn')}
               </Button>
             </form>
           </TabsContent>
@@ -150,7 +170,7 @@ export function LoginForm() {
               className="flex flex-col gap-4"
             >
               <div className="flex flex-col gap-2">
-                <Label htmlFor="signup-name">Nome</Label>
+                <Label htmlFor="signup-name">{t('fields.name')}</Label>
                 <Input
                   id="signup-name"
                   autoComplete="name"
@@ -163,7 +183,7 @@ export function LoginForm() {
                 )}
               </div>
               <div className="flex flex-col gap-2">
-                <Label htmlFor="signup-email">Email</Label>
+                <Label htmlFor="signup-email">{t('fields.email')}</Label>
                 <Input
                   id="signup-email"
                   type="email"
@@ -177,7 +197,7 @@ export function LoginForm() {
                 )}
               </div>
               <div className="flex flex-col gap-2">
-                <Label htmlFor="signup-password">Senha</Label>
+                <Label htmlFor="signup-password">{t('fields.password')}</Label>
                 <Input
                   id="signup-password"
                   type="password"
@@ -195,8 +215,8 @@ export function LoginForm() {
                 disabled={signUpForm.formState.isSubmitting}
               >
                 {signUpForm.formState.isSubmitting
-                  ? 'Criando...'
-                  : 'Criar conta'}
+                  ? t('actions.signingUp')
+                  : t('actions.signUp')}
               </Button>
             </form>
           </TabsContent>
@@ -204,12 +224,21 @@ export function LoginForm() {
 
         <div className="flex items-center gap-3 text-muted-foreground text-xs">
           <span className="h-px flex-1 bg-border" />
-          ou
+          {t('or')}
           <span className="h-px flex-1 bg-border" />
         </div>
 
-        <GoogleAuthButton isLoading={googleLoading} onClick={onGoogle} />
+        <GoogleAuthButton
+          isLoading={googleLoading}
+          onClick={onGoogle}
+          label={t('google')}
+          loadingLabel={t('googleLoading')}
+        />
       </CardContent>
+
+      <CardFooter className="justify-center">
+        <LanguageSwitcher />
+      </CardFooter>
     </Card>
   )
 }

@@ -6,6 +6,7 @@ import rateLimit from '@fastify/rate-limit'
 import FastifySensible from '@fastify/sensible'
 import fastifySwagger from '@fastify/swagger'
 import { prisma } from '@repo/database'
+import { defaultLocale, type Locale } from '@repo/i18n'
 import fastifyScalar from '@scalar/fastify-api-reference'
 import {
   jsonSchemaTransform,
@@ -16,11 +17,32 @@ import { routesPlugin } from '@/routes.js'
 import { servicePlugin } from '@/services.js'
 import { env } from '@/utils/environment.js'
 import { tp } from '@/utils/fastify.js'
+import { type AppTFunction, getT, resolveLanguage } from '@/utils/i18n.js'
+
+declare module 'fastify' {
+  interface FastifyRequest {
+    /** Idioma resolvido a partir do header Accept-Language */
+    lang: Locale
+    /** Função de tradução fixada no idioma da request */
+    t: AppTFunction
+  }
+}
 
 export const backendPlugin = tp(async app => {
   // Validator/serializer do Zod
   app.setValidatorCompiler(validatorCompiler)
   app.setSerializerCompiler(serializerCompiler)
+
+  // i18n: resolve o idioma por request (Accept-Language) e expõe request.t.
+  // Defaults são sobrescritos no onRequest abaixo, a cada request.
+  app.decorateRequest('lang', defaultLocale)
+  app.decorateRequest('t', getT(defaultLocale))
+  app.addHook('onRequest', async (request, reply) => {
+    const lang = resolveLanguage(request.headers['accept-language'])
+    request.lang = lang
+    request.t = getT(lang)
+    reply.header('Content-Language', lang)
+  })
 
   if (env.ENV === 'development') {
     await app.register(fastifySwagger, {

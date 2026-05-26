@@ -27,7 +27,7 @@ export const meRoute = tp(async scope => {
       const session = await scope.services.auth.auth.api.getSession({ headers })
 
       if (!session?.user) {
-        return reply.status(401).send({ error: 'Unauthorized' })
+        return reply.status(401).send({ error: request.t('auth:unauthorized') })
       }
 
       const { user } = session
