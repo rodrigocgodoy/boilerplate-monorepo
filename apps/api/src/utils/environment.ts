@@ -28,6 +28,20 @@ const envSchema = z.object({
   // Google OAuth — opcionais (deixe vazio para usar só email/senha)
   GOOGLE_CLIENT_ID: z.string().default(''),
   GOOGLE_CLIENT_SECRET: z.string().default(''),
+  // AbacatePay — opcionais (deixe vazio para desabilitar pagamentos).
+  // ABACATEPAY_WEBHOOK_SECRET é o valor que você define no painel e que chega
+  // como query param `?webhookSecret=...` nas chamadas de webhook.
+  ABACATEPAY_API_KEY: z.string().default(''),
+  ABACATEPAY_WEBHOOK_SECRET: z.string().default(''),
+  // Chave usada para validar o header `X-Webhook-Signature` (HMAC-SHA256).
+  // Vazio = usa a chave pública padrão do AbacatePay embutida no código.
+  ABACATEPAY_WEBHOOK_PUBLIC_KEY: z.string().default(''),
+  // Liga o bloqueio de features por plano (guard `requireActivePlan` no server
+  // e o layout `_paid` no front). `false` = nada é bloqueado (no-op).
+  REQUIRE_ACTIVE_PLAN: z
+    .string()
+    .default('false')
+    .transform(v => ['true', '1', 'yes', 'on'].includes(v.toLowerCase())),
 })
 
 const _env = envSchema.safeParse(process.env)
