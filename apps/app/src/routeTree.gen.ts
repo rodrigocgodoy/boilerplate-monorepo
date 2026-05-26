@@ -14,9 +14,11 @@ import { Route as AppRouteImport } from './routes/_app'
 import { Route as AppIndexRouteImport } from './routes/_app/index'
 import { Route as AuthLoginRouteImport } from './routes/_auth/login'
 import { Route as AppSubscriptionRouteImport } from './routes/_app/subscription'
+import { Route as AppOrganizationRouteImport } from './routes/_app/organization'
 import { Route as AppDashboardRouteImport } from './routes/_app/dashboard'
 import { Route as AppBillingRouteImport } from './routes/_app/billing'
 import { Route as AppPaidRouteImport } from './routes/_app/_paid'
+import { Route as AppAcceptInvitationInvitationIdRouteImport } from './routes/_app/accept-invitation.$invitationId'
 import { Route as AppPaidPremiumRouteImport } from './routes/_app/_paid/premium'
 
 const AuthRoute = AuthRouteImport.update({
@@ -42,6 +44,11 @@ const AppSubscriptionRoute = AppSubscriptionRouteImport.update({
   path: '/subscription',
   getParentRoute: () => AppRoute,
 } as any)
+const AppOrganizationRoute = AppOrganizationRouteImport.update({
+  id: '/organization',
+  path: '/organization',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppDashboardRoute = AppDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -56,6 +63,12 @@ const AppPaidRoute = AppPaidRouteImport.update({
   id: '/_paid',
   getParentRoute: () => AppRoute,
 } as any)
+const AppAcceptInvitationInvitationIdRoute =
+  AppAcceptInvitationInvitationIdRouteImport.update({
+    id: '/accept-invitation/$invitationId',
+    path: '/accept-invitation/$invitationId',
+    getParentRoute: () => AppRoute,
+  } as any)
 const AppPaidPremiumRoute = AppPaidPremiumRouteImport.update({
   id: '/premium',
   path: '/premium',
@@ -66,17 +79,21 @@ export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
   '/billing': typeof AppBillingRoute
   '/dashboard': typeof AppDashboardRoute
+  '/organization': typeof AppOrganizationRoute
   '/subscription': typeof AppSubscriptionRoute
   '/login': typeof AuthLoginRoute
   '/premium': typeof AppPaidPremiumRoute
+  '/accept-invitation/$invitationId': typeof AppAcceptInvitationInvitationIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof AppIndexRoute
   '/billing': typeof AppBillingRoute
   '/dashboard': typeof AppDashboardRoute
+  '/organization': typeof AppOrganizationRoute
   '/subscription': typeof AppSubscriptionRoute
   '/login': typeof AuthLoginRoute
   '/premium': typeof AppPaidPremiumRoute
+  '/accept-invitation/$invitationId': typeof AppAcceptInvitationInvitationIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -85,10 +102,12 @@ export interface FileRoutesById {
   '/_app/_paid': typeof AppPaidRouteWithChildren
   '/_app/billing': typeof AppBillingRoute
   '/_app/dashboard': typeof AppDashboardRoute
+  '/_app/organization': typeof AppOrganizationRoute
   '/_app/subscription': typeof AppSubscriptionRoute
   '/_auth/login': typeof AuthLoginRoute
   '/_app/': typeof AppIndexRoute
   '/_app/_paid/premium': typeof AppPaidPremiumRoute
+  '/_app/accept-invitation/$invitationId': typeof AppAcceptInvitationInvitationIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -96,11 +115,21 @@ export interface FileRouteTypes {
     | '/'
     | '/billing'
     | '/dashboard'
+    | '/organization'
     | '/subscription'
     | '/login'
     | '/premium'
+    | '/accept-invitation/$invitationId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/billing' | '/dashboard' | '/subscription' | '/login' | '/premium'
+  to:
+    | '/'
+    | '/billing'
+    | '/dashboard'
+    | '/organization'
+    | '/subscription'
+    | '/login'
+    | '/premium'
+    | '/accept-invitation/$invitationId'
   id:
     | '__root__'
     | '/_app'
@@ -108,10 +137,12 @@ export interface FileRouteTypes {
     | '/_app/_paid'
     | '/_app/billing'
     | '/_app/dashboard'
+    | '/_app/organization'
     | '/_app/subscription'
     | '/_auth/login'
     | '/_app/'
     | '/_app/_paid/premium'
+    | '/_app/accept-invitation/$invitationId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -156,6 +187,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSubscriptionRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/organization': {
+      id: '/_app/organization'
+      path: '/organization'
+      fullPath: '/organization'
+      preLoaderRoute: typeof AppOrganizationRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/dashboard': {
       id: '/_app/dashboard'
       path: '/dashboard'
@@ -175,6 +213,13 @@ declare module '@tanstack/react-router' {
       path: ''
       fullPath: '/'
       preLoaderRoute: typeof AppPaidRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/accept-invitation/$invitationId': {
+      id: '/_app/accept-invitation/$invitationId'
+      path: '/accept-invitation/$invitationId'
+      fullPath: '/accept-invitation/$invitationId'
+      preLoaderRoute: typeof AppAcceptInvitationInvitationIdRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/_paid/premium': {
@@ -202,16 +247,20 @@ interface AppRouteChildren {
   AppPaidRoute: typeof AppPaidRouteWithChildren
   AppBillingRoute: typeof AppBillingRoute
   AppDashboardRoute: typeof AppDashboardRoute
+  AppOrganizationRoute: typeof AppOrganizationRoute
   AppSubscriptionRoute: typeof AppSubscriptionRoute
   AppIndexRoute: typeof AppIndexRoute
+  AppAcceptInvitationInvitationIdRoute: typeof AppAcceptInvitationInvitationIdRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
   AppPaidRoute: AppPaidRouteWithChildren,
   AppBillingRoute: AppBillingRoute,
   AppDashboardRoute: AppDashboardRoute,
+  AppOrganizationRoute: AppOrganizationRoute,
   AppSubscriptionRoute: AppSubscriptionRoute,
   AppIndexRoute: AppIndexRoute,
+  AppAcceptInvitationInvitationIdRoute: AppAcceptInvitationInvitationIdRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)

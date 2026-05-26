@@ -43,16 +43,19 @@ Ideias priorizadas para evoluir este boilerplate de **monorepo SaaS**. Cada item
 
 ## 🥇 Tier 1 — fundação
 
-### 1. Organizations / multi-tenancy 🔴 🧩
+### 1. Organizations / multi-tenancy 🔴 🧩 — ✅ FEITO
 
-- **O quê:** workspaces/times com membros, convites, roles e troca de org ativa.
-- **Por quê:** maior alavanca pra B2B; muda o "dono" dos recursos de usuário → org.
-- **Como encaixa:** plugin `organization` do Better Auth (server + `auth-client`),
-  depois `pnpm auth:generate` + `pnpm db:migrate`. **Conecta direto** com o
-  `ownerType='ORGANIZATION'` já modelado em `Subscriptions` → assinatura por
-  workspace. Skill: `.claude/skills/organization-best-practices`.
-- **Atenção:** decidir escopo de billing (por usuário vs por org) e propagar o
-  `organizationId` nas rotas/guards.
+- **Status:** implementado. Ver `UPGRADES.md` → "Organizations / multi-tenancy".
+- Plugin `organization` do Better Auth (com **teams**) no server +
+  `organizationClient` no client; models Organization/Member/Invitation/Team/
+  TeamMember (migration).
+- **Billing migrado para a organização ativa** (`ownerType=ORGANIZATION`):
+  `subscribe`/`getActive`/`requireActivePlan`/histórico operam sobre a org da
+  sessão (`getAuthSession`).
+- Frontend: `OrgSwitcher` (trocar/criar), página `/organization` (membros +
+  convites por link), `/accept-invitation/$id`.
+- **Convites por link** (sem e-mail ainda): `sendInvitationEmail` loga o link e
+  a UI mostra "copiar link". Ligar o Resend (#2) para enviar de verdade.
 
 ### 2. E-mail transacional (Resend + React Email) 🟡 🧩
 
