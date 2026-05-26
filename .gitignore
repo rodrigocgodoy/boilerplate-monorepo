@@ -26,3 +26,9 @@ goals/
 
 # TanStack devtools cache
 .tanstack
+
+# Playwright
+test-results
+playwright-report
+blob-report
+playwright/.cache
