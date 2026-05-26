@@ -1,5 +1,7 @@
 # Boilerplate Monorepo (SaaS)
 
+[![CI](https://github.com/Dellub/boilerplate-monorepo/actions/workflows/ci.yml/badge.svg)](https://github.com/Dellub/boilerplate-monorepo/actions/workflows/ci.yml)
+
 Ponto de partida enxuto para SaaS: auth pronta, geração de client tipado a partir do OpenAPI, banco com Prisma e UI com tokens fáceis de customizar.
 
 ## Stack
