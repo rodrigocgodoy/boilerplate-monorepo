@@ -148,10 +148,10 @@ jobs:
         run: pnpm db:seed
 
   # Gate único para a branch protection: fica verde só se TODOS os jobs acima
-  # passarem. Exija apenas o check "CI" nas regras da branch — assim, se você
+  # passarem. Exija apenas o check "CHECK" nas regras da branch — assim, se você
   # adicionar/renomear jobs depois, não precisa mexer na proteção.
-  ci:
-    name: CI
+  check:
+    name: CHECK
     if: always()
     needs: [quality, e2e, migrations]
     runs-on: ubuntu-latest
