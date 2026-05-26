@@ -2,10 +2,16 @@ import { authClient } from '@repo/utils/auth-client'
 import { createFileRoute, Outlet, redirect } from '@tanstack/react-router'
 
 export const Route = createFileRoute('/_auth')({
-  beforeLoad: async () => {
-    const { data: session } = await authClient.getSession()
+  beforeLoad: async ({ context }) => {
+    // Mesma fonte (cache do React Query) que o guard de _app, para os dois
+    // layouts nunca divergirem e causarem loop de redirect.
+    const session = await context.queryClient.ensureQueryData({
+      queryKey: ['session'],
+      queryFn: () => authClient.getSession(),
+      staleTime: 5 * 60 * 1000,
+    })
 
-    if (session) {
+    if (session.data) {
       throw redirect({ to: '/dashboard' })
     }
   },
