@@ -75,3 +75,105 @@ model Verifications {
 
   @@map("verifications")
 }
+
+// ──────────────────────────────────────────────
+// Modelos da aplicação
+//
+// Ficam FORA do escopo do `pnpm auth:generate` (que só gerencia os modelos do
+// Better Auth acima). Por isso `userId` é uma coluna indexada simples, sem
+// relação formal com `Users` — assim o CLI do Better Auth não remove o campo
+// ao regenerar o schema. Espelha o estado das cobranças do AbacatePay
+// localmente; a fonte da verdade do pagamento é o webhook.
+// ──────────────────────────────────────────────
+
+model Payments {
+  id             String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  /// id da cobrança no AbacatePay (pixQrCode.id ou billing.id)
+  externalId     String         @unique
+  /// "PIX_QRCODE" (transparente) | "BILLING" (PIX+CARD) | "SUBSCRIPTION" (recorrente)
+  kind           String
+  /// PENDING | PAID | EXPIRED | CANCELLED | REFUNDED
+  status         String         @default("PENDING")
+  /// valor em centavos
+  amount         Int
+  /// PIX | CARD (quando aplicável)
+  method         String?
+  description    String?
+  /// copia-e-cola do PIX (apenas para PIX_QRCODE)
+  brCode         String?
+  /// URL de checkout hospedado (apenas para BILLING)
+  url            String?
+  /// usuário dono da cobrança (sem relação formal; ver nota acima)
+  userId         String?        @db.Uuid
+  /// vínculo opcional com a assinatura que originou a cobrança
+  subscriptionId String?        @db.Uuid
+  subscription   Subscriptions? @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
+  /// payload bruto útil para auditoria/debug
+  metadata       Json?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  @@index([userId])
+  @@index([status])
+  @@index([subscriptionId])
+  @@map("payments")
+}
+
+/// Catálogo de planos. Cada plano mapeia para um PRODUTO no AbacatePay criado
+/// com um `cycle` (a recorrência nativa v2 cobra a partir do produto). Guarde o
+/// id do produto (`prod_...`) em `externalProductId`.
+model Plans {
+  id                String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  /// identificador estável usado no código/URL (ex.: "pro-monthly")
+  slug              String          @unique
+  name              String
+  description       String?
+  /// preço por ciclo, em centavos
+  priceCents        Int
+  currency          String          @default("BRL")
+  /// WEEKLY | MONTHLY | SEMIANNUALLY | ANNUALLY
+  interval          String          @default("MONTHLY")
+  /// dias de trial (0 = sem trial)
+  trialDays         Int             @default(0)
+  /// id do produto correspondente no AbacatePay (prod_...)
+  externalProductId String?
+  /// limites/flags do plano (ex.: { "seats": 5, "apiCalls": 10000 })
+  features          Json?
+  active            Boolean         @default(true)
+  sortOrder         Int             @default(0)
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  subscriptions     Subscriptions[]
+
+  @@map("plans")
+}
+
+/// Assinatura de um dono (hoje sempre USER; `ownerType` deixa pronto para
+/// ORGANIZATION quando o plugin organization for habilitado). O estado é
+/// dirigido pelos webhooks do AbacatePay (subscription.*).
+model Subscriptions {
+  id                 String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  /// dono da assinatura (id do Users hoje; sem relação formal — ver nota acima)
+  ownerId            String     @db.Uuid
+  /// USER | ORGANIZATION
+  ownerType          String     @default("USER")
+  planId             String     @db.Uuid
+  plan               Plans      @relation(fields: [planId], references: [id])
+  /// id da assinatura no AbacatePay (subs_...)
+  externalId         String?    @unique
+  /// INCOMPLETE | TRIALING | ACTIVE | PAST_DUE | CANCELLED | EXPIRED
+  status             String     @default("INCOMPLETE")
+  currentPeriodStart DateTime?
+  currentPeriodEnd   DateTime?
+  cancelAtPeriodEnd  Boolean    @default(false)
+  canceledAt         DateTime?
+  trialEndsAt        DateTime?
+  metadata           Json?
+  createdAt          DateTime   @default(now())
+  updatedAt          DateTime   @updatedAt
+  payments           Payments[]
+
+  @@index([ownerId, ownerType])
+  @@index([status])
+  @@map("subscriptions")
+}
