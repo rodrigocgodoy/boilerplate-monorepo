@@ -74,13 +74,14 @@ Ideias priorizadas para evoluir este boilerplate de **monorepo SaaS**. Cada item
 - **Próximos passos** (documentados no `TESTING.md`): integração com banco de
   teste e E2E autenticado (login → checkout).
 
-### 4. CI/CD (GitHub Actions) 🟢
+### 4. CI/CD (GitHub Actions) 🟢 — ✅ FEITO
 
-- **O quê:** pipeline `lint → typecheck → test → build` com cache do Turborepo,
-  `--affected` para rodar só o que mudou, e checagem de migration (drift).
-- **Por quê:** trava regressão por ~nada de custo.
-- **Como encaixa:** `.github/workflows/ci.yml` + Postgres de serviço no runner;
-  opcional remote cache do Turborepo.
+- **Status:** implementado em `.github/workflows/ci.yml` (3 jobs).
+  - `quality`: lint (Biome) → build (typecheck + bundle via Turbo) → test (Vitest), com cache de pnpm e Turbo.
+  - `e2e`: Playwright (gera o api-client, instala o Chromium, roda o smoke).
+  - `migrations`: Postgres de serviço → `migrate deploy` + `status` + **drift check** (`migrate diff --exit-code`) + seed.
+- Dispara em push na `main` e em PRs; badge no README.
+- **Próximos passos:** `--affected` do Turbo (rodar só o que mudou) e remote cache.
 
 ### 5. Jobs em background (BullMQ + Redis) 🟡
 
