@@ -1,0 +1,38 @@
+{
+  "name": "@repo/database",
+  "version": "1.0.0",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/client.d.ts",
+      "import": "./dist/client.js",
+      "default": "./dist/client.js"
+    }
+  },
+  "scripts": {
+    "deploy": "prisma migrate deploy",
+    "dev": "prisma migrate dev",
+    "reset": "prisma migrate reset",
+    "push": "prisma db push",
+    "format": "prisma format",
+    "generate": "prisma generate",
+    "studio": "prisma studio",
+    "build": "prisma generate && tsc && tsc-alias"
+  },
+  "dependencies": {
+    "@prisma/adapter-pg": "^7.5.0",
+    "@prisma/client": "latest",
+    "@prisma/client-runtime-utils": "7.5.0",
+    "@repo/typescript-config": "workspace:*",
+    "dotenv": "^17.2.3",
+    "pg": "^8.16.3"
+  },
+  "devDependencies": {
+    "@repo/typescript-config": "workspace:*",
+    "@types/pg": "^8.16.0",
+    "prisma": "latest",
+    "tsc-alias": "^1.8.16",
+    "tsx": "^4.19.1",
+    "typescript": "5.5.4"
+  }
+}

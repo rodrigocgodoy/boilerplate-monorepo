@@ -1,0 +1,28 @@
+.DS_Store
+node_modules
+.turbo
+*.log
+dist
+dist-ssr
+*.local
+.env
+.cache
+server/dist
+public/dist
+
+# Código gerado (recriado por pnpm build / db:generate / api-client)
+packages/database/generated
+packages/api-client/gen
+
+# MCPs Cache
+.serena/
+
+# Claude Code user-specific settings
+.claude/settings.local.json
+.claude/scheduled_tasks.lock
+
+# Plannotator / Codex goals (per-dev)
+goals/
+
+# TanStack devtools cache
+.tanstack

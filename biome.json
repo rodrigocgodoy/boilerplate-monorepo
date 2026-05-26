@@ -1,0 +1,36 @@
+{
+  "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
+  "extends": ["@repo/biome-config/biome"],
+  "files": {
+    "includes": [
+      "**",
+      "!**/node_modules",
+      "!**/dist",
+      "!**/.turbo",
+      "!**/build",
+      "!**/*.config.js",
+      "!**/*.config.ts",
+      "!**/pnpm-lock.yaml",
+      "!**/database/generated",
+      "!**/gen",
+      "!**/routeTree.gen.ts",
+      "!**/.agents",
+      "!**/.claude"
+    ]
+  },
+  "css": {
+    "parser": {
+      "tailwindDirectives": true
+    }
+  },
+  "linter": {
+    "rules": {
+      "a11y": {
+        "useSemanticElements": "warn",
+        "useFocusableInteractive": "warn",
+        "useKeyWithClickEvents": "warn",
+        "useAriaPropsForRole": "warn"
+      }
+    }
+  }
+}
