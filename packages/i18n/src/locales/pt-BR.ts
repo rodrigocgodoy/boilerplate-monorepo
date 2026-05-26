@@ -115,5 +115,6 @@ export const ptBR = {
     planRequired: 'Este recurso exige um plano ativo.',
     premiumTitle: 'Recurso premium',
     premiumUnlocked: 'Feature premium liberada! 🎉',
+    noActiveOrg: 'Selecione ou crie uma organização para assinar.',
   },
 } as const

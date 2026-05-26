@@ -115,5 +115,6 @@ export const es = {
     planRequired: 'Esta función requiere un plan activo.',
     premiumTitle: 'Función premium',
     premiumUnlocked: '¡Función premium desbloqueada! 🎉',
+    noActiveOrg: 'Selecciona o crea una organización para suscribirte.',
   },
 } as const
