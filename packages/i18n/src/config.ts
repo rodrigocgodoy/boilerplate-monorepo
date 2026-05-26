@@ -14,6 +14,7 @@ export const namespaces = [
   'dashboard',
   'payment',
   'subscription',
+  'organization',
 ] as const
 
 export type Namespace = (typeof namespaces)[number]

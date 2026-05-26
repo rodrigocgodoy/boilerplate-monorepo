@@ -254,3 +254,42 @@ echo '{"required_status_checks":{"strict":true,"contexts":["CHECK"]},"enforce_ad
 `enforce_admins: true` aplica a regra também a admins (sem isso, admin mergeia
 mesmo com check vermelho). Adicionou/renomeou jobs depois? Não precisa mexer na
 regra — ela exige só o `CHECK`, que agrega todos os jobs.
+
+---
+
+## Organizations / multi-tenancy
+
+Multi-tenancy via plugin `organization` do Better Auth (com **teams**). O dono
+dos recursos de billing passa a ser a **organização ativa** da sessão.
+
+### Como funciona
+
+- **Server:** plugin `organization({ teams })` em `better-auth/configs.ts`.
+  **Client:** `organizationClient({ teams })` em `packages/utils/auth-client.ts`.
+- **Models:** Organization, Member, Invitation, Team, TeamMember (ajustados ao
+  padrão `@db.Uuid` do projeto). A sessão ganha `activeOrganizationId`.
+- **Org ativa:** `getAuthSession()` (em `apps/api/src/utils/auth.ts`) expõe o
+  `activeOrganizationId`. Endpoints de org são servidos pelo Better Auth em
+  `/auth/organization/*` e consumidos no front via `authClient.organization.*`.
+- **Billing por organização:** `subscribe`, `getActive`, `requireActivePlan` e o
+  histórico de pagamentos operam sobre `ownerType=ORGANIZATION` + a org ativa.
+  Sem org ativa, `POST /subscription` responde **400** (`noActiveOrg`).
+- **Frontend:** `OrgSwitcher` (trocar/criar org) no header, página
+  `/organization` (membros + convites), rota `/accept-invitation/$id`.
+
+### Convites
+
+Sem e-mail transacional ainda (ver Resend acima): `sendInvitationEmail` **loga**
+o link de aceite (`{APP_URL}/accept-invitation/{id}`) e a UI mostra "copiar
+link". Ao ligar o Resend, troque o corpo de `sendInvitationEmail` por um envio
+real. O convidado precisa estar logado (mesmo e-mail) para aceitar.
+
+### Atenção
+
+- Endpoints mutantes do Better Auth exigem header `Origin` em `trustedOrigins`
+  (CSRF) — o browser manda automático; testes via curl precisam de `-H Origin`.
+- Ao rodar `pnpm auth:generate` de novo, o CLI reintroduz relações duplicadas
+  (`sessionss`/`accountss`) e remove o `@db.Uuid` dos models de org — limpe o
+  diff (mantenha só as back-relations novas e reaplique `@db.Uuid`).
+- Roles: `owner`/`admin`/`member` (permissões checadas no server). Para roles
+  customizadas/teams avançados, veja a skill `organization-best-practices`.
