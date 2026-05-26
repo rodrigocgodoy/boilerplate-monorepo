@@ -146,3 +146,19 @@ jobs:
 
       - name: Validar seed
         run: pnpm db:seed
+
+  # Gate único para a branch protection: fica verde só se TODOS os jobs acima
+  # passarem. Exija apenas o check "CI" nas regras da branch — assim, se você
+  # adicionar/renomear jobs depois, não precisa mexer na proteção.
+  ci:
+    name: CI
+    if: always()
+    needs: [quality, e2e, migrations]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Confirma que todos os jobs passaram
+        run: |
+          echo "quality=${{ needs.quality.result }} e2e=${{ needs.e2e.result }} migrations=${{ needs.migrations.result }}"
+          [ "${{ needs.quality.result }}" = "success" ] \
+            && [ "${{ needs.e2e.result }}" = "success" ] \
+            && [ "${{ needs.migrations.result }}" = "success" ]
