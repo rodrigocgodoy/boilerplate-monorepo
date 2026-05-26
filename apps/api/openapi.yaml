@@ -696,7 +696,7 @@
     },
     "/payments": {
       "get": {
-        "summary": "Histórico de pagamentos do usuário",
+        "summary": "Histórico de pagamentos (usuário + organização ativa)",
         "tags": [
           "Payment"
         ],
@@ -922,7 +922,7 @@
     },
     "/subscription": {
       "get": {
-        "summary": "Retorna a assinatura atual do usuário",
+        "summary": "Retorna a assinatura da organização ativa",
         "tags": [
           "Subscription"
         ],
@@ -1091,7 +1091,7 @@
         }
       },
       "post": {
-        "summary": "Assina um plano",
+        "summary": "Assina um plano (na organização ativa)",
         "tags": [
           "Subscription"
         ],
@@ -1132,6 +1132,25 @@
                   "required": [
                     "url",
                     "subscriptionId"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
                   ],
                   "additionalProperties": false
                 }
@@ -1238,7 +1257,7 @@
     },
     "/subscription/cancel": {
       "post": {
-        "summary": "Cancela a assinatura ativa",
+        "summary": "Cancela a assinatura da organização ativa",
         "tags": [
           "Subscription"
         ],
@@ -1256,6 +1275,25 @@
                   },
                   "required": [
                     "cancelled"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
                   ],
                   "additionalProperties": false
                 }

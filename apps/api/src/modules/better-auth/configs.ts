@@ -1,6 +1,7 @@
 import { prisma } from '@repo/database'
 import type { BetterAuthOptions, betterAuth } from 'better-auth'
 import { prismaAdapter } from 'better-auth/adapters/prisma'
+import { organization } from 'better-auth/plugins'
 import { env } from '@/utils/environment.js'
 
 export type Auth = ReturnType<
@@ -18,6 +19,33 @@ export function createAuthConfig(): BetterAuthOptions {
     database: prismaAdapter(prisma, {
       provider: 'postgresql',
     }),
+    plugins: [
+      organization({
+        allowUserToCreateOrganization: true,
+        organizationLimit: 10,
+        membershipLimit: 100,
+        creatorRole: 'owner',
+        invitationExpiresIn: 60 * 60 * 24 * 7, // 7 dias
+        teams: {
+          enabled: true,
+          maximumTeams: 10,
+          maximumMembersPerTeam: 50,
+        },
+        // Ainda não há e-mail transacional (ver UPGRADES.md → Resend). Por isso
+        // logamos o link de aceite; a UI também lista os convites pendentes com
+        // "copiar link". Ao ligar o Resend, troque por um envio de e-mail real.
+        sendInvitationEmail: async data => {
+          const url = new URL(
+            `/accept-invitation/${data.invitation.id}`,
+            env.APP_URL,
+          ).toString()
+          // biome-ignore lint/suspicious/noConsole: log de dev até o Resend entrar
+          console.info(
+            `[org-invite] ${data.email} → "${data.organization.name}": ${url}`,
+          )
+        },
+      }),
+    ],
     emailAndPassword: {
       enabled: true,
     },

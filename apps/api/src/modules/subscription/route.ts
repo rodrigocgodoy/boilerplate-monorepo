@@ -4,7 +4,7 @@ import {
   PaymentError,
   PaymentNotConfiguredError,
 } from '@/modules/payment/client.js'
-import { getAuthenticatedUserId } from '@/utils/auth.js'
+import { getAuthSession } from '@/utils/auth.js'
 import { env } from '@/utils/environment.js'
 import { tp } from '@/utils/fastify.js'
 import type { AppTFunction } from '@/utils/i18n.js'
@@ -63,8 +63,8 @@ export const subscriptionRoute = tp(async scope => {
       },
     },
     async (request, reply) => {
-      const userId = await getAuthenticatedUserId(scope, request)
-      if (!userId) {
+      const session = await getAuthSession(scope, request)
+      if (!session) {
         return reply
           .status(401)
           .send({ error: request.t('payment:unauthorized') })
@@ -74,13 +74,13 @@ export const subscriptionRoute = tp(async scope => {
     },
   )
 
-  // GET /subscription — assinatura atual do usuário + se está ativa.
+  // GET /subscription — assinatura da ORGANIZAÇÃO ATIVA + se está ativa.
   scope.get(
     '/subscription',
     {
       schema: {
         tags: ['Subscription'],
-        summary: 'Retorna a assinatura atual do usuário',
+        summary: 'Retorna a assinatura da organização ativa',
         response: {
           200: subscriptionResponseSchema,
           401: subscriptionErrorSchema,
@@ -88,14 +88,19 @@ export const subscriptionRoute = tp(async scope => {
       },
     },
     async (request, reply) => {
-      const userId = await getAuthenticatedUserId(scope, request)
-      if (!userId) {
+      const session = await getAuthSession(scope, request)
+      if (!session) {
         return reply
           .status(401)
           .send({ error: request.t('payment:unauthorized') })
       }
-      const { subscription: sub, isActive } =
-        await subscription.getActive(userId)
+      // Sem org ativa → sem assinatura (o front pede pra criar/selecionar org).
+      const { subscription: sub, isActive } = session.activeOrganizationId
+        ? await subscription.getActive(
+            session.activeOrganizationId,
+            'ORGANIZATION',
+          )
+        : { subscription: null, isActive: false }
       return reply.status(200).send({
         subscription: sub
           ? mapSubscription(sub as Subscriptions & { plan: Plans })
@@ -112,10 +117,11 @@ export const subscriptionRoute = tp(async scope => {
     {
       schema: {
         tags: ['Subscription'],
-        summary: 'Assina um plano',
+        summary: 'Assina um plano (na organização ativa)',
         body: subscribeBodySchema,
         response: {
           200: subscribeResponseSchema,
+          400: subscriptionErrorSchema,
           401: subscriptionErrorSchema,
           404: subscriptionErrorSchema,
           500: subscriptionErrorSchema,
@@ -130,16 +136,22 @@ export const subscriptionRoute = tp(async scope => {
           .status(503)
           .send({ error: request.t('payment:notConfigured') })
       }
-      const userId = await getAuthenticatedUserId(scope, request)
-      if (!userId) {
+      const session = await getAuthSession(scope, request)
+      if (!session) {
         return reply
           .status(401)
           .send({ error: request.t('payment:unauthorized') })
       }
+      if (!session.activeOrganizationId) {
+        return reply
+          .status(400)
+          .send({ error: request.t('subscription:noActiveOrg') })
+      }
       try {
         const result = await subscription.subscribe(
-          userId,
+          session.activeOrganizationId,
           request.body.planSlug,
+          'ORGANIZATION',
         )
         return reply.status(200).send(result)
       } catch (error) {
@@ -155,9 +167,10 @@ export const subscriptionRoute = tp(async scope => {
     {
       schema: {
         tags: ['Subscription'],
-        summary: 'Cancela a assinatura ativa',
+        summary: 'Cancela a assinatura da organização ativa',
         response: {
           200: cancelResponseSchema,
+          400: subscriptionErrorSchema,
           401: subscriptionErrorSchema,
           404: subscriptionErrorSchema,
           500: subscriptionErrorSchema,
@@ -172,14 +185,22 @@ export const subscriptionRoute = tp(async scope => {
           .status(503)
           .send({ error: request.t('payment:notConfigured') })
       }
-      const userId = await getAuthenticatedUserId(scope, request)
-      if (!userId) {
+      const session = await getAuthSession(scope, request)
+      if (!session) {
         return reply
           .status(401)
           .send({ error: request.t('payment:unauthorized') })
       }
+      if (!session.activeOrganizationId) {
+        return reply
+          .status(400)
+          .send({ error: request.t('subscription:noActiveOrg') })
+      }
       try {
-        const cancelled = await subscription.cancel(userId)
+        const cancelled = await subscription.cancel(
+          session.activeOrganizationId,
+          'ORGANIZATION',
+        )
         return reply.status(200).send({ cancelled })
       } catch (error) {
         const { status, body } = subscriptionErrorReply(error, request.t)
