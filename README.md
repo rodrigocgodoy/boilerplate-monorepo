@@ -50,3 +50,22 @@ Sempre que mudar/adicionar uma rota, rode `pnpm openapi && pnpm api-client`.
   `:root` e `.dark`).
 - **Auth**: `apps/api/src/modules/better-auth/configs.ts`.
 - **Adicionar Redis, MinIO/S3, email, etc.**: veja [`UPGRADES.md`](./UPGRADES.md).
+- **Traduções (i18n)**: `packages/i18n` (veja abaixo).
+
+## Internacionalização (i18n)
+
+Idiomas: **pt-BR** (padrão), **en**, **es**. As mensagens ficam no pacote
+compartilhado `@repo/i18n` (`packages/i18n/src/locales/*.ts`), agrupadas por
+namespace (`common`, `auth`, `validation`, `dashboard`) e com chaves tipadas.
+
+- **Frontend** (`apps/app`): react-i18next inicializado em `src/i18n.ts`
+  (detecção por `localStorage` → navegador, preferência persistida). Use
+  `useTranslation([ns...])` e `t('ns:chave')`; há um `LanguageSwitcher` no login
+  e no dashboard.
+- **API** (`apps/api`): resolve o idioma por request via header `Accept-Language`
+  (`src/utils/i18n.ts` + hook em `plugin.ts`), expõe `request.t` e responde com
+  `Content-Language`. Ex.: o 401 de `GET /me` é traduzido.
+
+**Adicionar um idioma**: copie `packages/i18n/src/locales/pt-BR.ts`, traduza,
+registre em `config.ts` (`locales`) e em `resources.ts`. **Nova chave**:
+adicione no `pt-BR.ts` (referência de tipos) e nos demais.

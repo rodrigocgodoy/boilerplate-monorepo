@@ -1,4 +1,5 @@
 import './styles/global.css'
+import './i18n'
 
 import { setupApiClient } from '@repo/api-client/setup'
 import { Toaster } from '@repo/ui/components/sonner'
