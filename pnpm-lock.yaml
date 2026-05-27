@@ -57,6 +57,9 @@ importers:
       '@repo/i18n':
         specifier: workspace:*
         version: link:../../packages/i18n
+      '@repo/utils':
+        specifier: workspace:*
+        version: link:../../packages/utils
       '@scalar/fastify-api-reference':
         specifier: ^1.43.17
         version: 1.57.5

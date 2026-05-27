@@ -1,4 +1,5 @@
 import { prisma } from '@repo/database'
+import { ac, roles } from '@repo/utils/permissions'
 import type { BetterAuthOptions, betterAuth } from 'better-auth'
 import { prismaAdapter } from 'better-auth/adapters/prisma'
 import { organization } from 'better-auth/plugins'
@@ -32,6 +33,9 @@ export function createAuthConfig(): BetterAuthOptions {
     }),
     plugins: [
       organization({
+        // RBAC: statement + roles compartilhados com o client (@repo/utils/permissions)
+        ac,
+        roles,
         allowUserToCreateOrganization: true,
         organizationLimit: 10,
         membershipLimit: 100,

@@ -1,6 +1,7 @@
 import { organizationClient } from 'better-auth/client/plugins'
 import { createAuthClient } from 'better-auth/react'
 import { getApiBaseUrl } from './api-url.js'
+import { ac, roles } from './permissions.js'
 
 /**
  * Cliente Better Auth para o frontend. Conversa com a API em `${API}/auth`.
@@ -12,5 +13,5 @@ import { getApiBaseUrl } from './api-url.js'
 export const authClient = createAuthClient({
   baseURL: getApiBaseUrl(),
   basePath: '/auth',
-  plugins: [organizationClient({ teams: { enabled: true } })],
+  plugins: [organizationClient({ teams: { enabled: true }, ac, roles })],
 })
