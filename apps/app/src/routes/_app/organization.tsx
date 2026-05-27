@@ -43,6 +43,7 @@ function OrganizationPage() {
   const [role, setRole] = useState<(typeof ROLES)[number]>('member')
   const [inviting, setInviting] = useState(false)
 
+  const { data: session } = authClient.useSession()
   const { data } = useQuery({
     queryKey: ['full-organization'],
     queryFn: () => authClient.organization.getFullOrganization(),
@@ -83,46 +84,65 @@ function OrganizationPage() {
     )
   }
 
+  // RBAC: papel do usuário atual nesta org → permissões (checagem estática no
+  // client, a partir do `ac`/`roles` compartilhados). O server reforça de novo.
+  const myRole = org.members.find(m => m.userId === session?.user.id)?.role as
+    | 'owner'
+    | 'admin'
+    | 'member'
+    | undefined
+  const can = (
+    permissions: Parameters<
+      typeof authClient.organization.checkRolePermission
+    >[0]['permissions'],
+  ) =>
+    !!myRole &&
+    authClient.organization.checkRolePermission({ role: myRole, permissions })
+  const canInvite = can({ invitation: ['create'] })
+  const canManageMembers = can({ member: ['delete'] })
+
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 p-6">
       <h1 className="font-semibold text-2xl">{org.name}</h1>
 
-      {/* Convidar */}
-      <Card>
-        <CardHeader>
-          <CardTitle>{t('invite')}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form
-            onSubmit={handleInvite}
-            className="flex flex-wrap items-end gap-2"
-          >
-            <Input
-              type="email"
-              required
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              placeholder={t('inviteEmail')}
-              className="min-w-56 flex-1"
-            />
-            <Select
-              value={role}
-              onValueChange={v => setRole(v as (typeof ROLES)[number])}
+      {/* Convidar (só quem tem permissão de criar convite) */}
+      {canInvite && (
+        <Card>
+          <CardHeader>
+            <CardTitle>{t('invite')}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form
+              onSubmit={handleInvite}
+              className="flex flex-wrap items-end gap-2"
             >
-              <SelectTrigger className="w-36">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="member">{t('roles.member')}</SelectItem>
-                <SelectItem value="admin">{t('roles.admin')}</SelectItem>
-              </SelectContent>
-            </Select>
-            <Button type="submit" disabled={inviting || !email.trim()}>
-              {inviting ? t('inviting') : t('invite')}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+              <Input
+                type="email"
+                required
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                placeholder={t('inviteEmail')}
+                className="min-w-56 flex-1"
+              />
+              <Select
+                value={role}
+                onValueChange={v => setRole(v as (typeof ROLES)[number])}
+              >
+                <SelectTrigger className="w-36">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="member">{t('roles.member')}</SelectItem>
+                  <SelectItem value="admin">{t('roles.admin')}</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button type="submit" disabled={inviting || !email.trim()}>
+                {inviting ? t('inviting') : t('invite')}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Membros */}
       <Card>
@@ -148,7 +168,7 @@ function OrganizationPage() {
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">
-                    {m.role !== 'owner' && (
+                    {canManageMembers && m.role !== 'owner' && (
                       <Button
                         variant="ghost"
                         size="sm"
