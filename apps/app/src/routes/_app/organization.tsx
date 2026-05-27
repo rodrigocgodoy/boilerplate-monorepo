@@ -28,6 +28,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { type FormEvent, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
+import { TeamsSection } from '@/components/teams-section'
 
 export const Route = createFileRoute('/_app/organization')({
   component: OrganizationPage,
@@ -214,6 +215,9 @@ function OrganizationPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Times */}
+      <TeamsSection members={org.members} />
     </div>
   )
 }

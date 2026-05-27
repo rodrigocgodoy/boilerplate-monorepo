@@ -149,5 +149,16 @@ export const en = {
       cta: 'Accept',
     },
     createFailed: 'Failed to create the organization',
+    teams: {
+      title: 'Teams',
+      create: 'Create team',
+      namePlaceholder: 'Team name',
+      creating: 'Creating...',
+      delete: 'Delete',
+      noTeams: 'No teams yet.',
+      members: 'Team members',
+      addMember: 'Add member',
+      noTeamMembers: 'No members.',
+    },
   },
 } as const

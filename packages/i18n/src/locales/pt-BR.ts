@@ -150,5 +150,16 @@ export const ptBR = {
       cta: 'Aceitar',
     },
     createFailed: 'Falha ao criar a organização',
+    teams: {
+      title: 'Times',
+      create: 'Criar time',
+      namePlaceholder: 'Nome do time',
+      creating: 'Criando...',
+      delete: 'Excluir',
+      noTeams: 'Nenhum time ainda.',
+      members: 'Membros do time',
+      addMember: 'Adicionar membro',
+      noTeamMembers: 'Sem membros.',
+    },
   },
 } as const

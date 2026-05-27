@@ -150,5 +150,16 @@ export const es = {
       cta: 'Aceptar',
     },
     createFailed: 'Error al crear la organización',
+    teams: {
+      title: 'Equipos',
+      create: 'Crear equipo',
+      namePlaceholder: 'Nombre del equipo',
+      creating: 'Creando...',
+      delete: 'Eliminar',
+      noTeams: 'Aún no hay equipos.',
+      members: 'Miembros del equipo',
+      addMember: 'Añadir miembro',
+      noTeamMembers: 'Sin miembros.',
+    },
   },
 } as const
