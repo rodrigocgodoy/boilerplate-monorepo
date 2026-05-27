@@ -92,41 +92,50 @@ export function createAuthConfig(): BetterAuthOptions {
       modelName: 'verifications',
     },
     databaseHooks: {
-      user: {
+      session: {
         create: {
-          // Auto-cria uma organização pessoal logo após o cadastro: o novo
-          // usuário já entra como `owner`. Falha aqui não derruba o signup.
-          after: async user => {
-            try {
-              const base = slugify(user.name || user.email.split('@')[0])
-              await prisma.organization.create({
+          // Em TODA criação de sessão (signup e login): garante a organização
+          // pessoal e já define a org ativa — na mesma operação, sem race entre
+          // criar o usuário e a sessão. Contas antigas sem org ganham uma no
+          // próximo login.
+          before: async session => {
+            const existing = await prisma.member.findFirst({
+              where: { userId: session.userId },
+              orderBy: { createdAt: 'asc' },
+              select: { organizationId: true },
+            })
+            if (existing) {
+              return {
                 data: {
-                  name: user.name ? `${user.name}` : 'Minha organização',
-                  slug: `${base}-${Date.now().toString(36)}`,
-                  members: { create: { userId: user.id, role: 'owner' } },
+                  ...session,
+                  activeOrganizationId: existing.organizationId,
                 },
+              }
+            }
+            // Primeiro acesso: cria a org pessoal (owner) e já ativa.
+            try {
+              const user = await prisma.users.findUnique({
+                where: { id: session.userId },
+                select: { name: true, email: true },
               })
+              const base = slugify(
+                user?.name || user?.email?.split('@')[0] || 'org',
+              )
+              const org = await prisma.organization.create({
+                data: {
+                  name: user?.name || 'Minha organização',
+                  slug: `${base}-${Date.now().toString(36)}`,
+                  members: {
+                    create: { userId: session.userId, role: 'owner' },
+                  },
+                },
+                select: { id: true },
+              })
+              return { data: { ...session, activeOrganizationId: org.id } }
             } catch (error) {
               // biome-ignore lint/suspicious/noConsole: log de dev
               console.error('[auto-org] falha ao criar organização', error)
-            }
-          },
-        },
-      },
-      session: {
-        create: {
-          // Ao logar, define a organização ativa = a mais antiga do usuário,
-          // para a sessão já vir com escopo de org (billing/membros).
-          before: async session => {
-            const member = await prisma.member.findFirst({
-              where: { userId: session.userId },
-              orderBy: { createdAt: 'asc' },
-            })
-            return {
-              data: {
-                ...session,
-                activeOrganizationId: member?.organizationId,
-              },
+              return { data: session }
             }
           },
         },
