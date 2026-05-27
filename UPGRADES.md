@@ -274,8 +274,12 @@ dos recursos de billing passa a ser a **organização ativa** da sessão.
 - **Billing por organização:** `subscribe`, `getActive`, `requireActivePlan` e o
   histórico de pagamentos operam sobre `ownerType=ORGANIZATION` + a org ativa.
   Sem org ativa, `POST /subscription` responde **400** (`noActiveOrg`).
-- **Frontend:** `OrgSwitcher` (trocar/criar org) no header, página
-  `/organization` (membros + convites), rota `/accept-invitation/$id`.
+- **Auto-criação:** `databaseHooks.user.create.after` cria uma org pessoal
+  (owner) no signup; `session.create.before` define a org ativa no login. O
+  layout `_app` ainda ativa a primeira org se nenhuma estiver ativa (cobre o
+  race da sessão inicial do signup).
+- **Frontend:** `OrgSwitcher` (trocar/criar org) no header; página
+  `/organization` (membros + convites + **times**); rota `/accept-invitation/$id`.
 
 ### Convites
 
