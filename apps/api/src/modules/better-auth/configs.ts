@@ -10,6 +10,17 @@ export type Auth = ReturnType<
 
 const googleEnabled = Boolean(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET)
 
+function slugify(value: string): string {
+  return (
+    value
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[̀-ͯ]/g, '') // remove acentos
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '') || 'org'
+  )
+}
+
 export function createAuthConfig(): BetterAuthOptions {
   return {
     appName: 'Boilerplate',
@@ -79,6 +90,47 @@ export function createAuthConfig(): BetterAuthOptions {
     },
     verification: {
       modelName: 'verifications',
+    },
+    databaseHooks: {
+      user: {
+        create: {
+          // Auto-cria uma organização pessoal logo após o cadastro: o novo
+          // usuário já entra como `owner`. Falha aqui não derruba o signup.
+          after: async user => {
+            try {
+              const base = slugify(user.name || user.email.split('@')[0])
+              await prisma.organization.create({
+                data: {
+                  name: user.name ? `${user.name}` : 'Minha organização',
+                  slug: `${base}-${Date.now().toString(36)}`,
+                  members: { create: { userId: user.id, role: 'owner' } },
+                },
+              })
+            } catch (error) {
+              // biome-ignore lint/suspicious/noConsole: log de dev
+              console.error('[auto-org] falha ao criar organização', error)
+            }
+          },
+        },
+      },
+      session: {
+        create: {
+          // Ao logar, define a organização ativa = a mais antiga do usuário,
+          // para a sessão já vir com escopo de org (billing/membros).
+          before: async session => {
+            const member = await prisma.member.findFirst({
+              where: { userId: session.userId },
+              orderBy: { createdAt: 'asc' },
+            })
+            return {
+              data: {
+                ...session,
+                activeOrganizationId: member?.organizationId,
+              },
+            }
+          },
+        },
+      },
     },
     advanced: {
       database: {
