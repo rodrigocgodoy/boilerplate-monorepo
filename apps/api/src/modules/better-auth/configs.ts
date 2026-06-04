@@ -134,6 +134,27 @@ export function createAuthConfig(): BetterAuthOptions {
       : {},
     user: {
       modelName: 'users',
+      // LGPD/GDPR (#11): exclusão de conta pelo próprio usuário. Sem
+      // `sendDeleteAccountVerification`, o Better Auth exige reautenticação
+      // (senha) na chamada — o front coleta a senha. `afterDelete` limpa os
+      // dados da app que não caem por cascade (FK). Ver UPGRADES.md.
+      deleteUser: {
+        enabled: true,
+        afterDelete: async user => {
+          try {
+            // Apaga as API keys criadas pelo usuário.
+            await prisma.apiKeys.deleteMany({ where: { userId: user.id } })
+            // Anonimiza a trilha de auditoria (preserva o evento, remove o autor).
+            await prisma.auditLogs.updateMany({
+              where: { actorId: user.id },
+              data: { actorId: null },
+            })
+          } catch (error) {
+            // biome-ignore lint/suspicious/noConsole: cleanup best-effort
+            console.error('[deleteUser] falha ao limpar dados da app', error)
+          }
+        },
+      },
     },
     session: {
       modelName: 'sessions',

@@ -352,4 +352,33 @@ export const es = {
     never: 'Nunca',
     neverUsed: 'Nunca usada',
   },
+  account: {
+    nav: 'Cuenta',
+    title: 'Cuenta',
+    description: 'Gestiona tus datos y tu cuenta.',
+    back: 'Volver',
+    export: {
+      title: 'Exportar mis datos',
+      description:
+        'Descarga un JSON con tus datos personales (perfil, sesiones, organizaciones, claves y registro de auditoría). LGPD/GDPR.',
+      action: 'Exportar (JSON)',
+      exporting: 'Exportando...',
+      failed: 'Error al exportar los datos.',
+    },
+    delete: {
+      title: 'Eliminar cuenta',
+      description:
+        'Elimina tu cuenta y revoca el acceso. Es permanente y no se puede deshacer.',
+      action: 'Eliminar mi cuenta',
+      confirmTitle: 'Confirmar eliminación',
+      confirmDescription:
+        'Ingresa tu contraseña para confirmar. Tu cuenta se eliminará de inmediato.',
+      password: 'Contraseña',
+      cancel: 'Cancelar',
+      confirm: 'Eliminar definitivamente',
+      deleting: 'Eliminando...',
+      done: 'Cuenta eliminada.',
+      failed: 'No se pudo eliminar la cuenta.',
+    },
+  },
 } as const
