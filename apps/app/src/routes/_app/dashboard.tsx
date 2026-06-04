@@ -13,6 +13,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { createFileRoute, Link, useRouter } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { LanguageSwitcher } from '@/components/language-switcher'
+import { NotificationBell } from '@/components/notification-bell'
 import { OrgSwitcher } from '@/components/org-switcher'
 
 export const Route = createFileRoute('/_app/dashboard')({
@@ -50,6 +51,7 @@ function Dashboard() {
       <header className="flex items-center justify-between gap-3">
         <h1 className="font-semibold text-2xl">{t('title')}</h1>
         <div className="flex items-center gap-2">
+          <NotificationBell />
           <OrgSwitcher />
           {isAdmin && (
             <Button asChild variant="outline" size="sm">

@@ -279,6 +279,39 @@ model ApiKeys {
   @@map("api_keys")
 }
 
+/// Notificações in-app por usuário (#13). `category` casa com as preferências
+/// (ver NotificationPreferences). `readAt` nulo = não lida. `data` guarda extras
+/// (ex.: `{ "url": "/billing" }`).
+
+model Notifications {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String    @db.Uuid
+  /// categoria (ex.: "system", "billing", "security", "member")
+  category  String    @default("system")
+  title     String
+  body      String?
+  data      Json?
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId, createdAt])
+  @@map("notifications")
+}
+
+/// Preferências de notificação por usuário (#13): mapa categoria → canais.
+/// `preferences` (Json) ex.: `{ "billing": { "email": true, "inApp": true } }`.
+/// Categoria ausente herda o default do código.
+
+model NotificationPreferences {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId      String   @unique @db.Uuid
+  preferences Json
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("notification_preferences")
+}
+
 // ──────────────────────────────────────────────
 // Modelos do plugin Organization do Better Auth.
 // Gerados por `pnpm auth:generate`; ajustados para o padrão @db.Uuid +

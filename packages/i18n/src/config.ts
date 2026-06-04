@@ -20,6 +20,7 @@ export const namespaces = [
   'audit',
   'apiKeys',
   'account',
+  'notifications',
 ] as const
 
 export type Namespace = (typeof namespaces)[number]
