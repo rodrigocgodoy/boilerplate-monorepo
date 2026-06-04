@@ -1,3 +1,4 @@
+import { getAuthSession } from '@/utils/auth.js'
 import { tp } from '@/utils/fastify.js'
 import { meErrorSchema, meResponseSchema } from './schemas.js'
 
@@ -44,6 +45,26 @@ export const meRoute = tp(async scope => {
         image: user.image ?? null,
         createdAt: createdAt.toISOString(),
       })
+    },
+  )
+
+  // GET /me/export — LGPD/GDPR (#11): baixa os dados pessoais do usuário em
+  // JSON. `hide: true` (é um download, não entra no OpenAPI/Kubb); o front faz
+  // fetch com credenciais e salva o arquivo.
+  scope.get(
+    '/me/export',
+    { schema: { hide: true } },
+    async (request, reply) => {
+      const session = await getAuthSession(scope, request)
+      if (!session) {
+        return reply.status(401).send({ error: request.t('auth:unauthorized') })
+      }
+      const data = await scope.services.me.exportUserData(session.userId)
+      return reply
+        .header('Content-Type', 'application/json; charset=utf-8')
+        .header('Content-Disposition', 'attachment; filename="meus-dados.json"')
+        .status(200)
+        .send(JSON.stringify(data, null, 2))
     },
   )
 })

@@ -19,6 +19,7 @@ export const namespaces = [
   'entitlements',
   'audit',
   'apiKeys',
+  'account',
 ] as const
 
 export type Namespace = (typeof namespaces)[number]
