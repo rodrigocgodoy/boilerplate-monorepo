@@ -20,7 +20,7 @@ Ideias priorizadas para evoluir este boilerplate de **monorepo SaaS**. Cada item
 | # | Feature | Tier | Esforço | Depende de |
 |---|---------|------|---------|------------|
 | 1 | Organizations / multi-tenancy | 1 | 🔴 G | — |
-| 2 | E-mail transacional (Resend + React Email) | 1 | 🟡 M | — |
+| 2 | E-mail transacional (Resend + React Email) ✅ | 1 | 🟡 M | — |
 | 3 | Fundação de testes (Vitest + Playwright) | 1 | 🟡 M | — |
 | 4 | CI/CD (GitHub Actions) | 1 | 🟢 P | #3 |
 | 5 | Jobs em background (BullMQ + Redis) | 1 | 🟡 M | Redis |
@@ -54,18 +54,21 @@ Ideias priorizadas para evoluir este boilerplate de **monorepo SaaS**. Cada item
   sessão (`getAuthSession`).
 - Frontend: `OrgSwitcher` (trocar/criar), página `/organization` (membros +
   convites por link), `/accept-invitation/$id`.
-- **Convites por link** (sem e-mail ainda): `sendInvitationEmail` loga o link e
-  a UI mostra "copiar link". Ligar o Resend (#2) para enviar de verdade.
+- **Convites por organização** enviados por e-mail via `@repo/emails` (#2); sem
+  `RESEND_API_KEY`, o link é logado no console (dev) e a UI mostra "copiar link".
 
-### 2. E-mail transacional (Resend + React Email) 🟡 🧩
+### 2. E-mail transacional (Resend + React Email) 🟡 🧩 — ✅ FEITO
 
-- **O quê:** verificação de e-mail, reset de senha e e-mails de billing
-  (cobrança paga, pagamento falhou, trial acabando, assinatura cancelada).
-- **Por quê:** table-stakes; hoje só existe como guia em `UPGRADES.md`.
-- **Como encaixa:** `resend` + hooks do Better Auth (`sendResetPassword`,
-  `sendVerificationEmail`); templates com React Email num `packages/emails`.
-  Disparar os e-mails de billing a partir do `SubscriptionService`/webhook.
-  Skills: `email-and-password-best-practices`, `react-email`, `resend`.
+- **Status:** implementado no pacote `@repo/emails`. Ver `UPGRADES.md` →
+  "E-mail transacional (Resend + React Email)".
+- Templates React Email (`packages/emails/src/emails/*.tsx`) + sender via Resend;
+  sem `RESEND_API_KEY`, os e-mails são logados no console (fallback de dev).
+  Preview com `pnpm email:dev`.
+- **Dispara hoje:** verificação de e-mail no signup, reset de senha e convite de
+  organização (hooks do Better Auth) + billing (ativação/cancelamento ao owner
+  da org, no webhook do `SubscriptionService`).
+- **Próximos passos:** página de reset de senha no app (+ link "esqueci a senha"
+  no login) e e-mails de billing adicionais (pagamento falhou, trial acabando).
 
 ### 3. Fundação de testes (Vitest + Playwright) 🟡 — ✅ FEITO
 
