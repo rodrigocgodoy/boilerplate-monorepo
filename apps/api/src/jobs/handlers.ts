@@ -1,5 +1,6 @@
 import { prisma } from '@repo/database'
 import {
+  sendNotificationEmail,
   sendOrganizationInvitationEmail,
   sendPasswordResetEmail,
   sendSubscriptionEmail,
@@ -27,6 +28,13 @@ export type EmailJob =
       planName: string
       status: 'active' | 'cancelled'
     }
+  | {
+      template: 'notification'
+      to: string
+      title: string
+      body?: string
+      url?: string
+    }
 
 async function handleEmail(job: EmailJob): Promise<void> {
   switch (job.template) {
@@ -41,6 +49,9 @@ async function handleEmail(job: EmailJob): Promise<void> {
       break
     case 'subscription':
       await sendSubscriptionEmail(job)
+      break
+    case 'notification':
+      await sendNotificationEmail(job)
       break
   }
 }

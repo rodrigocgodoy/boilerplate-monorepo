@@ -31,7 +31,7 @@ Ideias priorizadas para evoluir este boilerplate de **monorepo SaaS**. Cada item
 | 10 | API keys (acesso programático) ✅ | 2 | 🟢 P | #6 |
 | 11 | LGPD/GDPR (export + exclusão de conta) ✅ | 3 | 🟡 M | #5 |
 | 12 | 2FA / passkeys | 3 | 🟢 P | E-mail |
-| 13 | Notificações in-app + preferências | 3 | 🟡 M | #5 |
+| 13 | Notificações in-app + preferências ✅ | 3 | 🟡 M | #5 |
 | 14 | Upload de avatar/arquivos (S3) | 3 | 🟢 P | S3 |
 | 15 | Product analytics + feature flags (PostHog) | 3 | 🟢 P | — |
 | 16 | Storybook no `packages/ui` | 3 | 🟢 P | — |
@@ -210,10 +210,19 @@ Ideias priorizadas para evoluir este boilerplate de **monorepo SaaS**. Cada item
 - Plugin `twoFactor` (TOTP/OTP/backup codes) e/ou passkeys (WebAuthn).
   Skill: `two-factor-authentication-best-practices`.
 
-### 13. Notificações in-app + preferências 🟡
+### 13. Notificações in-app + preferências 🟡 — ✅ FEITO
 
-- Centro de notificações (model + rota + sino no header) e preferências de
-  e-mail por categoria. Dispara via #5.
+- **Status:** implementado. Ver `UPGRADES.md` → "Notificações in-app + preferências".
+- Models `Notifications` + `NotificationPreferences` (migration `notifications`).
+- `NotificationService.notify(userId, …)` é o ponto de entrada: respeita as
+  preferências por categoria (in-app cria o registro; e-mail enfileira via #5,
+  template genérico `notification` no `@repo/emails`).
+- Rotas (tag `Notifications`): listar + contagem de não lidas, marcar lida/
+  todas, ler/salvar preferências e `POST /notifications/test` (demo).
+- Front: **sino** no header (badge de não lidas) + página `/notifications`
+  (lista com marcar lida + grade de preferências por categoria/canal).
+- **Próximos passos:** disparar notificações em eventos reais (billing,
+  convite, ban) e realtime (SSE/WebSocket) em vez de polling.
 
 ### 14. Upload de avatar/arquivos (S3) 🟢
 

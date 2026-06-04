@@ -1,5 +1,6 @@
 import type { ReactElement } from 'react'
 import { Resend } from 'resend'
+import NotificationEmail from './emails/notification.js'
 import OrganizationInvitationEmail from './emails/organization-invitation.js'
 import ResetPasswordEmail from './emails/reset-password.js'
 import SubscriptionEmail from './emails/subscription.js'
@@ -71,6 +72,20 @@ export function sendOrganizationInvitationEmail(p: {
       organizationName={p.organizationName}
       url={p.url}
     />,
+    p.url,
+  )
+}
+
+export function sendNotificationEmail(p: {
+  to: string
+  title: string
+  body?: string
+  url?: string
+}) {
+  return deliver(
+    p.to,
+    p.title,
+    <NotificationEmail title={p.title} body={p.body} url={p.url} />,
     p.url,
   )
 }

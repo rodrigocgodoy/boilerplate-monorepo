@@ -624,3 +624,46 @@ Relevante no Brasil (LGPD) e na UE (GDPR).
   produção.
 - O export expõe dados pessoais — sirva sempre sobre sessão autenticada (já é o
   caso) e por HTTPS.
+
+---
+
+## Notificações in-app + preferências
+
+Centro de notificações por usuário + preferências de canal por categoria.
+Módulo `apps/api/src/modules/notifications`.
+
+### Como funciona
+
+- **Models:** `Notifications` (por usuário, com `category`, `readAt`) e
+  `NotificationPreferences` (um Json por usuário: categoria → `{ email, inApp }`).
+  Migration `notifications`.
+- **`NotificationService.notify(userId, { category, title, body?, url? })`** é o
+  **ponto de entrada** para outras features dispararem notificações. Respeita as
+  preferências: se `inApp` ligado, cria o registro; se `email` ligado, **enfileira
+  via #5** o template genérico `notification` do `@repo/emails`.
+- **Categorias:** `system`, `billing`, `security`, `member` (default: tudo
+  ligado). Edite a lista em `NOTIFICATION_CATEGORIES`.
+- **Rotas (tag `Notifications`):** `GET /notifications` (lista + não lidas),
+  `POST /notifications/:id/read`, `POST /notifications/read-all`,
+  `GET|PUT /notifications/preferences`, `POST /notifications/test` (demo).
+- **Front:** **sino** no header (badge de não lidas, via `useGetNotifications`) +
+  página `/notifications` (lista com marcar como lida + grade de preferências).
+
+### Disparar uma notificação
+
+```ts
+// de qualquer lugar da API (ex.: no webhook de billing):
+await app.services.notifications.notify(userId, {
+  category: 'billing',
+  title: 'Pagamento confirmado',
+  body: 'Recebemos seu pagamento.',
+  url: '/billing',
+})
+```
+
+### Atenção
+
+- O front usa **polling** (React Query) para o badge; para realtime, troque por
+  SSE/WebSocket.
+- O e-mail só sai com `RESEND_API_KEY` (senão é logado — ver "E-mail
+  transacional"); e respeita a preferência `email` da categoria.
