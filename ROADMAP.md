@@ -32,7 +32,7 @@ Ideias priorizadas para evoluir este boilerplate de **monorepo SaaS**. Cada item
 | 11 | LGPD/GDPR (export + exclusão de conta) ✅ | 3 | 🟡 M | #5 |
 | 12 | 2FA / passkeys | 3 | 🟢 P | E-mail |
 | 13 | Notificações in-app + preferências ✅ | 3 | 🟡 M | #5 |
-| 14 | Upload de avatar/arquivos (S3) | 3 | 🟢 P | S3 |
+| 14 | Upload de avatar/arquivos (S3) ✅ | 3 | 🟢 P | S3 |
 | 15 | Product analytics + feature flags (PostHog) | 3 | 🟢 P | — |
 | 16 | Storybook no `packages/ui` | 3 | 🟢 P | — |
 | 17 | Dockerfile + deploy | 3 | 🟢 P | — |
@@ -224,10 +224,19 @@ Ideias priorizadas para evoluir este boilerplate de **monorepo SaaS**. Cada item
 - **Próximos passos:** disparar notificações em eventos reais (billing,
   convite, ban) e realtime (SSE/WebSocket) em vez de polling.
 
-### 14. Upload de avatar/arquivos (S3) 🟢
+### 14. Upload de avatar/arquivos (S3) 🟢 — ✅ FEITO
 
-- Fiar o S3/MinIO do `UPGRADES.md`: upload com URL pré-assinada, avatar no
-  perfil, validação de tipo/tamanho.
+- **Status:** implementado. Ver `UPGRADES.md` → "MinIO / S3 (uploads)".
+- Módulo `storage`: `POST /uploads/avatar` gera um **POST pré-assinado**
+  (`@aws-sdk/s3-presigned-post`); o arquivo vai **direto** do browser pro S3
+  (não passa pela API). A policy força o tipo e limita o tamanho
+  (`AVATAR_MAX_BYTES`, default 2 MB) — validação no storage, não só no client.
+- **Opt-in:** sem `S3_BUCKET`+credenciais, a rota responde **503** (mesmo padrão
+  do AbacatePay). Funciona com MinIO (`S3_ENDPOINT` → `forcePathStyle`) ou S3/R2.
+- Front: `AvatarUpload` na página `/account` (preview + trocar foto → presign →
+  upload → `authClient.updateUser({ image })`). i18n pt-BR/en/es.
+- **Próximos passos:** uploads genéricos (anexos), remoção do objeto antigo ao
+  trocar e antivírus/processamento (resize) via job (#5).
 
 ### 15. Product analytics + feature flags (PostHog) 🟢
 
