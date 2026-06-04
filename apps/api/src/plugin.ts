@@ -13,6 +13,7 @@ import {
   serializerCompiler,
   validatorCompiler,
 } from 'fastify-type-provider-zod'
+import { jobs } from '@/jobs/index.js'
 import { routesPlugin } from '@/routes.js'
 import { servicePlugin } from '@/services.js'
 import { env } from '@/utils/environment.js'
@@ -164,6 +165,16 @@ export const backendPlugin = tp(async app => {
 
   // Services
   await app.register(servicePlugin)
+
+  // Jobs em background: sobe o worker in-process (default) e agenda os jobs
+  // periódicos. Sem REDIS_URL é no-op (jobs rodam inline). Para escalar com um
+  // worker dedicado, rode `pnpm worker` com JOBS_IN_PROCESS=false aqui.
+  if (env.JOBS_IN_PROCESS) {
+    await jobs.start(app.log)
+    app.addHook('onClose', async () => {
+      await jobs.stop()
+    })
+  }
 
   // Routes
   await app.register(routesPlugin)

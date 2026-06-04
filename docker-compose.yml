@@ -22,25 +22,26 @@ services:
         max-size: 100m
 
   # ─────────────────────────────────────────────────────────────
-  # UPGRADE opcional: Redis (cache / sessão secundária do Better Auth /
-  # rate-limit distribuído). Descomente este bloco e veja UPGRADES.md.
+  # Redis — fila de jobs (BullMQ). Também serve para cache / sessão
+  # secundária do Better Auth / rate-limit distribuído (ver UPGRADES.md).
+  # Sem REDIS_URL no .env, os jobs rodam inline (sem fila).
   # ─────────────────────────────────────────────────────────────
-  # redis:
-  #   image: redis:7-alpine
-  #   container_name: boilerplate-redis
-  #   restart: ${RESTART_POLICY:-on-failure:3}
-  #   ports:
-  #     - '${REDIS_PORT:-6379}:6379'
-  #   volumes:
-  #     - redis:/data
-  #   healthcheck:
-  #     test: ['CMD', 'redis-cli', 'ping']
-  #     interval: 1s
-  #     timeout: 5s
-  #     retries: 10
-  #   logging:
-  #     options:
-  #       max-size: 100m
+  redis:
+    image: redis:7-alpine
+    container_name: boilerplate-redis
+    restart: ${RESTART_POLICY:-on-failure:3}
+    ports:
+      - '${REDIS_PORT:-6379}:6379'
+    volumes:
+      - redis:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 1s
+      timeout: 5s
+      retries: 10
+    logging:
+      options:
+        max-size: 100m
 
   # ─────────────────────────────────────────────────────────────
   # UPGRADE opcional: MinIO (storage S3-compatível para uploads).
@@ -88,5 +89,5 @@ services:
 
 volumes:
   postgresql:
-  # redis:
+  redis:
   # minio:

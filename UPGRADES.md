@@ -9,22 +9,22 @@ independente — adicione só o que precisar.
 ## Redis (cache / sessão secundária / rate-limit distribuído)
 
 Útil para acelerar a sessão do Better Auth (`secondaryStorage`), cache da
-aplicação e rate-limit compartilhado entre instâncias.
+aplicação e rate-limit compartilhado entre instâncias. O serviço `redis` já vem
+habilitado no `docker-compose.yml` (usado pelos jobs — ver seção abaixo).
 
-1. **docker-compose.yml** — descomente o serviço `redis` e a entrada `redis:` em `volumes:`.
-2. **.env** — descomente `REDIS_URL` e `REDIS_PORT`.
-3. **apps/api** — instale o cliente e o storage:
+1. **.env** — preencha `REDIS_URL` (suba o Redis com `pnpm dep-up`). A var já
+   existe no schema de `environment.ts`.
+2. **apps/api** — instale o cliente e o storage (o `ioredis` já vem via `@repo/jobs`):
    ```bash
-   pnpm --filter @repo/api add ioredis @better-auth/redis-storage
+   pnpm --filter @repo/api add @better-auth/redis-storage
    ```
-4. **apps/api/src/utils/redis.ts** — crie o cliente:
+3. **apps/api/src/utils/redis.ts** — crie o cliente:
    ```ts
    import { Redis } from 'ioredis'
    import { env } from '@/utils/environment.js'
    export const redis = new Redis(env.REDIS_URL)
    ```
-5. **environment.ts** — adicione `REDIS_URL: z.string()` ao schema.
-6. **better-auth/configs.ts** — ligue o storage secundário:
+4. **better-auth/configs.ts** — ligue o storage secundário:
    ```ts
    import { redisStorage } from '@better-auth/redis-storage'
    import { redis } from '@/utils/redis.js'
@@ -32,6 +32,46 @@ aplicação e rate-limit compartilhado entre instâncias.
    secondaryStorage: redisStorage({ client: redis, keyPrefix: 'better-auth:' }),
    rateLimit: { storage: 'secondary-storage' },
    ```
+
+---
+
+## Jobs em background (BullMQ + Redis)
+
+Já vem implementado no pacote **`@repo/jobs`** (infra de fila genérica com BullMQ)
++ handlers em `apps/api/src/jobs`. Segue a filosofia do boilerplate: **funciona
+sem infra**.
+
+**Como funciona:**
+
+- **Sem `REDIS_URL`** — `enqueue(...)` roda o handler **inline** (síncrono). O app
+  funciona em dev sem fila/worker.
+- **Com `REDIS_URL`** — vira fila de verdade: `enqueue` publica no Redis e o worker
+  processa com **retries + backoff exponencial** (3 tentativas por padrão). Jobs
+  **agendados** (cron) via `upsertJobScheduler`.
+
+**Ativar:**
+
+1. **.env** — preencha `REDIS_URL` (`pnpm dep-up` sobe o Redis).
+2. Pronto. A API sobe o worker in-process por padrão (`JOBS_IN_PROCESS=true`).
+
+**O que já existe:**
+
+- Job **`email`** — despacha qualquer e-mail (verificação, reset, convite,
+  billing) via `@repo/emails`. O e-mail de billing já passa por ele
+  (`enqueue('email', { template: 'subscription', … })`).
+- Job agendado **`sweep-subscriptions`** — todo dia às 03:00, expira assinaturas
+  com `currentPeriodEnd` vencido (não depende só do webhook).
+
+**Adicionar um job:**
+
+1. Crie o handler em `apps/api/src/jobs/handlers.ts` (a chave vira o nome do job).
+2. Dispare com `enqueue('meu-job', payload)` de qualquer lugar da API.
+3. Para agendar, adicione `{ job: 'meu-job', pattern: '<cron>' }` em `schedules`
+   (`apps/api/src/jobs/index.ts`).
+
+**Worker dedicado (produção):** para escalar, rode o worker num processo separado
+com `pnpm worker` (`node dist/worker.js` em prod) e setando `JOBS_IN_PROCESS=false`
+na API — assim a API só enfileira e o worker processa.
 
 ---
 

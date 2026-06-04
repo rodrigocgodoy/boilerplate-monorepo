@@ -16,13 +16,15 @@ Monorepo boilerplate para SaaS. Use este arquivo como guia ao trabalhar no repo.
 - `packages/database` — Prisma + adapter-pg, só com modelos do Better Auth.
 - `packages/ui` — primitivos shadcn + tokens neutros (OKLCH).
 - `packages/utils` — `auth-client` (Better Auth React) e `api-url`.
+- `packages/emails` — templates React Email + senders via Resend.
+- `packages/jobs` — fila de jobs (BullMQ); handlers em `apps/api/src/jobs`.
 - `packages/{biome-config,typescript-config}` — configs compartilhadas.
 
 **Comandos chave:**
 
 ```bash
 pnpm install
-pnpm dep-up            # Postgres via docker
+pnpm dep-up            # Postgres + Redis via docker
 pnpm db:generate      # Prisma Client
 pnpm db:migrate       # migrations (cria/atualiza tabelas)
 pnpm openapi          # gera apps/api/openapi.yaml

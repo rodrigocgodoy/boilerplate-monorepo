@@ -46,6 +46,15 @@ const envSchema = z.object({
     .string()
     .default('false')
     .transform(v => ['true', '1', 'yes', 'on'].includes(v.toLowerCase())),
+  // Jobs em background (BullMQ) — opcional. Vazio = jobs rodam inline (dev),
+  // sem fila. Preencha para ativar a fila/worker/agendador. Ver UPGRADES.md.
+  REDIS_URL: z.string().default(''),
+  // Sobe o worker de jobs junto da API (in-process). `false` = só enfileira;
+  // rode `pnpm worker` num processo separado para processar. Ver UPGRADES.md.
+  JOBS_IN_PROCESS: z
+    .string()
+    .default('true')
+    .transform(v => ['true', '1', 'yes', 'on'].includes(v.toLowerCase())),
 })
 
 const _env = envSchema.safeParse(process.env)
