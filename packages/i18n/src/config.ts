@@ -16,6 +16,7 @@ export const namespaces = [
   'subscription',
   'organization',
   'admin',
+  'entitlements',
   'audit',
 ] as const
 

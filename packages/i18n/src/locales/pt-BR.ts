@@ -256,6 +256,30 @@ export const ptBR = {
       stop: 'Parar de impersonar',
     },
   },
+  entitlements: {
+    title: 'Uso do plano',
+    description: 'Consumo e limites do seu plano no período atual.',
+    period: 'Período: {{period}}',
+    unlimited: 'Ilimitado',
+    usage: '{{used}} de {{limit}}',
+    remaining: '{{remaining}} restante(s)',
+    quotaExceeded: 'Limite do plano atingido para este recurso.',
+    metrics: {
+      seats: 'Assentos',
+      projects: 'Projetos',
+      apiCalls: 'Chamadas de API',
+    },
+    demo: {
+      title: 'Demonstração de metering',
+      description:
+        'Consome 1 unidade de uma métrica medida (respeita a quota do plano).',
+      metric: 'Métrica',
+      consume: 'Consumir 1',
+      consuming: 'Consumindo...',
+      consumed: 'Consumido. Uso: {{used}}{{limit}}.',
+      exceeded: 'Limite atingido para {{metric}}.',
+    },
+  },
   audit: {
     nav: 'Auditoria',
     title: 'Trilha de auditoria',

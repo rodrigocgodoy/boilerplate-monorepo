@@ -1,5 +1,6 @@
 import { auditRoute } from '@/modules/audit/route.js'
 import { betterAuthRoute } from '@/modules/better-auth/route.js'
+import { entitlementsRoute } from '@/modules/entitlements/route.js'
 import { meRoute } from '@/modules/me/route.js'
 import { paymentRoute } from '@/modules/payment/route.js'
 import { subscriptionRoute } from '@/modules/subscription/route.js'
@@ -10,5 +11,6 @@ export const routesPlugin = tp(async app => {
   await app.register(meRoute)
   await app.register(paymentRoute)
   await app.register(subscriptionRoute)
+  await app.register(entitlementsRoute)
   await app.register(auditRoute)
 })

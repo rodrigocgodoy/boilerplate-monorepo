@@ -415,6 +415,47 @@ existentes, no próximo login (idempotente). Vazio = nenhum admin automático
 
 ---
 
+## Entitlements / limites por plano
+
+Transforma `plan.features` (ex.: `{ seats: 5, projects: 20, apiCalls: 100000 }`)
+em regras de uso por **organização** — o que dá sentido prático aos planos além
+do gate "tem plano?". Módulo `apps/api/src/modules/entitlements`.
+
+### Como funciona
+
+- **Features:** mapa `{ <metric>: number | boolean }` no `plan.features`.
+  Métricas numéricas viram **quotas**; flags booleanas viram features
+  liga/desliga (`canUseFeature`). Limite ausente = ilimitado; `-1` = ilimitado
+  explícito; `0` desliga a feature.
+- **`EntitlementsService`:** resolve as features do plano ativo da org (fallback
+  no plano free `starter` quando não há assinatura ativa) e expõe `getUsage`,
+  `checkQuota`, `consume` (incremento atômico dentro da quota) e `canUseFeature`.
+- **Dois tipos de métrica:**
+  - **contagem viva** (ex.: `seats`) — contada direto na fonte (`Member`), sempre
+    exata, sem contador;
+  - **medida** (ex.: `apiCalls`) — acumulada na tabela `usage_counters` por
+    período. O período é uma **chave mensal** (`YYYY-MM`): virar o mês cria uma
+    linha nova — **reset implícito**, sem job de reset.
+- **Endpoints (tag `Entitlements`):** `GET /entitlements` (resumo de uso da org
+  ativa) e `POST /entitlements/track` (consome uma métrica medida; **402** ao
+  exceder). Hooks gerados pelo Kubb (`useGetEntitlements`,
+  `usePostEntitlementsTrack`).
+- **Guard:** `requireQuota(metric)` (preHandler) bloqueia ações que criam
+  recursos limitados (ex.: antes de adicionar membro) com **402**.
+- **Front:** card "Uso do plano" em `/subscription` (uso/limite por métrica +
+  barra) com um botão de demo que consome 1 unidade.
+
+### Atenção
+
+- A trava real é no **servidor** (`consume`/`requireQuota`); a UI é só leitura.
+- Enforçar `seats` no convite exige um hook no fluxo do plugin organization
+  (`/auth/organization/*`) — fica como opt-in; o `checkQuota('seats')`/
+  `requireQuota('seats')` já estão prontos para isso.
+- Para amarrar o período de uso ao ciclo de cobrança (em vez do mês calendário),
+  troque a chave de período por `currentPeriodStart` da assinatura.
+
+---
+
 ## Audit log (trilha de auditoria)
 
 Trilha de ações sensíveis por **organização** (mudou role, removeu membro,
