@@ -27,6 +27,7 @@ function Dashboard() {
     'subscription',
     'organization',
     'admin',
+    'audit',
   ])
   const router = useRouter()
   const queryClient = useQueryClient()
@@ -55,6 +56,9 @@ function Dashboard() {
           )}
           <Button asChild variant="outline" size="sm">
             <Link to="/organization">{t('organization:members')}</Link>
+          </Button>
+          <Button asChild variant="outline" size="sm">
+            <Link to="/audit">{t('audit:nav')}</Link>
           </Button>
           <Button asChild variant="outline" size="sm">
             <Link to="/subscription">{t('subscription:title')}</Link>
