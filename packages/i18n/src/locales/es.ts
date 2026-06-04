@@ -255,4 +255,28 @@ export const es = {
       stop: 'Dejar de suplantar',
     },
   },
+  entitlements: {
+    title: 'Uso del plan',
+    description: 'Consumo y límites de tu plan en el período actual.',
+    period: 'Período: {{period}}',
+    unlimited: 'Ilimitado',
+    usage: '{{used}} de {{limit}}',
+    remaining: '{{remaining}} restante(s)',
+    quotaExceeded: 'Límite del plan alcanzado para este recurso.',
+    metrics: {
+      seats: 'Asientos',
+      projects: 'Proyectos',
+      apiCalls: 'Llamadas a la API',
+    },
+    demo: {
+      title: 'Demostración de metering',
+      description:
+        'Consume 1 unidad de una métrica medida (respeta la cuota del plan).',
+      metric: 'Métrica',
+      consume: 'Consumir 1',
+      consuming: 'Consumiendo...',
+      consumed: 'Consumido. Uso: {{used}}{{limit}}.',
+      exceeded: 'Límite alcanzado para {{metric}}.',
+    },
+  },
 } as const

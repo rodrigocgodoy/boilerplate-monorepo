@@ -197,6 +197,30 @@ model Subscriptions {
   @@map("subscriptions")
 }
 
+/// Contadores de uso por organização para entitlements/limites por plano (#7).
+/// Cada linha acumula uma métrica medida (ex.: "apiCalls") dentro de um período
+/// (`period` = chave mensal "YYYY-MM"). Virar o mês cria uma nova linha — reset
+/// implícito, sem job de reset. Métricas de contagem viva (ex.: "seats") não
+/// usam esta tabela; são contadas direto na fonte (Member).
+
+model UsageCounters {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  /// organização dona do contador (org ativa da sessão)
+  organizationId String   @db.Uuid
+  /// nome da métrica medida (ex.: "apiCalls")
+  metric         String
+  /// chave do período de reset (mensal: "YYYY-MM")
+  period         String
+  /// quantidade consumida no período
+  used           Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([organizationId, metric, period])
+  @@index([organizationId])
+  @@map("usage_counters")
+}
+
 // ──────────────────────────────────────────────
 // Modelos do plugin Organization do Better Auth.
 // Gerados por `pnpm auth:generate`; ajustados para o padrão @db.Uuid +
