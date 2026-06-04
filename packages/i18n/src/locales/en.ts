@@ -410,4 +410,17 @@ export const en = {
       saveFailed: 'Failed to save preferences.',
     },
   },
+  storage: {
+    notConfigured: 'Uploads are not configured. See UPGRADES.md.',
+    invalidType: 'Unsupported file type.',
+    avatar: {
+      title: 'Profile photo',
+      description: 'PNG, JPG, WEBP or GIF (up to 2 MB).',
+      change: 'Change photo',
+      uploading: 'Uploading...',
+      updated: 'Photo updated.',
+      failed: 'Failed to upload the image.',
+      tooLarge: 'Image too large (max 2 MB).',
+    },
+  },
 } as const
