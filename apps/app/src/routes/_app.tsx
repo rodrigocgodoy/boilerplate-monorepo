@@ -1,6 +1,7 @@
 import { authClient } from '@repo/utils/auth-client'
 import { createFileRoute, Outlet, redirect } from '@tanstack/react-router'
 import { useEffect } from 'react'
+import { ImpersonationBanner } from '@/components/impersonation-banner'
 
 export const Route = createFileRoute('/_app')({
   beforeLoad: async ({ context, location }) => {
@@ -44,5 +45,10 @@ function useEnsureActiveOrganization() {
 
 function RouteComponent() {
   useEnsureActiveOrganization()
-  return <Outlet />
+  return (
+    <>
+      <ImpersonationBanner />
+      <Outlet />
+    </>
+  )
 }

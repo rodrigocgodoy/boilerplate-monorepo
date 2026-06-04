@@ -25,6 +25,19 @@ const envSchema = z.object({
   PORT: z.coerce.number().default(3333),
   HOST: z.string().default('0.0.0.0'),
   DATABASE_URL: z.string(),
+  // RBAC de plataforma (plugin `admin` do Better Auth). Lista de e-mails que
+  // viram super-admin (role de sistema `admin`): são promovidos no signup e
+  // sincronizados no login. Separe por vírgula. Vazio = nenhum admin automático
+  // (promova manualmente pelo painel/banco). Ver UPGRADES.md.
+  ADMIN_EMAILS: z
+    .string()
+    .default('')
+    .transform(v =>
+      v
+        .split(',')
+        .map(e => e.trim().toLowerCase())
+        .filter(Boolean),
+    ),
   // Google OAuth — opcionais (deixe vazio para usar só email/senha)
   GOOGLE_CLIENT_ID: z.string().default(''),
   GOOGLE_CLIENT_SECRET: z.string().default(''),

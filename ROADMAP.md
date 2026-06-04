@@ -24,7 +24,7 @@ Ideias priorizadas para evoluir este boilerplate de **monorepo SaaS**. Cada item
 | 3 | Fundação de testes (Vitest + Playwright) | 1 | 🟡 M | — |
 | 4 | CI/CD (GitHub Actions) | 1 | 🟢 P | #3 |
 | 5 | Jobs em background (BullMQ + Redis) ✅ | 1 | 🟡 M | Redis |
-| 6 | RBAC + painel admin | 2 | 🟡 M | #1 |
+| 6 | RBAC + painel admin ✅ | 2 | 🟡 M | #1 |
 | 7 | Entitlements / limites por plano | 2 | 🟡 M | Assinaturas |
 | 8 | Audit log | 2 | 🟢 P | — |
 | 9 | Observabilidade (Sentry + OTel) | 2 | 🟡 M | — |
@@ -99,24 +99,36 @@ Ideias priorizadas para evoluir este boilerplate de **monorepo SaaS**. Cada item
   `apps/api/src/jobs`. **Funciona sem infra**: sem `REDIS_URL`, `enqueue` roda
   inline (dev); com Redis, fila real com retries/backoff + jobs agendados (cron).
 - Jobs: **`email`** (todos os e-mails — verificação, reset, convite e billing —
-  passam pela fila), **`subscription-webhook`** (webhook de assinatura processado
-  fora do request, async + idempotente via `jobId`) e **`sweep-subscriptions`**
-  (agendado diário às 03:00, expira assinaturas vencidas).
+  passam pela fila), **`subscription-webhook`** e **`billing-webhook`** (todos os
+  eventos do webhook — assinatura e cobrança avulsa `billing.*`/PIX — processados
+  fora do request, async + idempotente via `jobId`), **`sweep-subscriptions`**
+  (diário 03:00, expira assinaturas pagas vencidas) e **`sweep-trials`** (diário
+  03:30, expira trials terminados sem conversão; o gating já corta o acesso em
+  tempo real via `trialEndsAt`).
 - Worker in-process por padrão (`JOBS_IN_PROCESS`); `pnpm worker` para um worker
   dedicado em produção.
-- **Próximos passos:** processar o webhook de cobrança avulsa (`billing.*`) via
-  fila também e mover varreduras de trial para jobs agendados dedicados.
+- **Próximos passos:** notificações de billing adicionais (pagamento falhou,
+  trial acabando) e métricas/observabilidade da fila (#9).
 
 ---
 
 ## 🥈 Tier 2 — diferenciais de SaaS
 
-### 6. RBAC + painel admin 🟡 🧩
+### 6. RBAC + painel admin 🟡 🧩 — ✅ FEITO
 
-- **O quê:** papéis/permissões e um painel pra gestão de usuários, impersonation
-  e ban.
-- **Como encaixa:** plugin `admin` do Better Auth + uma área `_app/_admin`
-  guardada por role. Combina com #1 (roles por org).
+- **Status:** implementado. Ver `UPGRADES.md` → "RBAC + painel admin (plugin
+  admin)".
+- Plugin `admin` do Better Auth no server + `adminClient` no client. Role de
+  **sistema** (`admin`/`user`), ban e impersonation — distinta dos papéis por
+  organização (#1). Migration `admin_plugin_rbac` (`role`/`banned`/`banReason`/
+  `banExpires` em `users`, `impersonatedBy` em `sessions`).
+- Painel `/admin` (`_app/admin`) guardado pela role de sistema: gestão de
+  usuários (busca/paginação), trocar role, ban/unban (motivo + expiração),
+  impersonar, revogar sessões e remover. Banner global de impersonation.
+- **Primeiro admin** via `ADMIN_EMAILS` (promovido no signup e sincronizado no
+  login). Endpoints sob `/auth/admin/*` (sem módulo de API/Kubb próprio).
+- **Próximos passos:** permissões finas (`ac`/`roles` do plugin) e E2E
+  autenticado do painel (depende do banco de teste — ver `TESTING.md`).
 
 ### 7. Entitlements / limites por plano 🟡
 

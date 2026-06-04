@@ -2,7 +2,7 @@ import { prisma } from '@repo/database'
 import { ac, roles } from '@repo/utils/permissions'
 import type { BetterAuthOptions, betterAuth } from 'better-auth'
 import { prismaAdapter } from 'better-auth/adapters/prisma'
-import { emailOTP, organization } from 'better-auth/plugins'
+import { admin, emailOTP, organization } from 'better-auth/plugins'
 import { enqueue } from '@/jobs/index.js'
 import { env } from '@/utils/environment.js'
 
@@ -11,6 +11,11 @@ export type Auth = ReturnType<
 >
 
 const googleEnabled = Boolean(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET)
+
+/** Se o e-mail está na lista de super-admins (ADMIN_EMAILS). */
+function isAdminEmail(email?: string | null): boolean {
+  return !!email && env.ADMIN_EMAILS.includes(email.toLowerCase())
+}
 
 function slugify(value: string): string {
   return (
@@ -73,6 +78,16 @@ export function createAuthConfig(): BetterAuthOptions {
             await enqueue('email', { template: 'reset', to: email, otp })
           }
         },
+      }),
+      // RBAC de plataforma: role de sistema (`admin` | `user`) no usuário, ban e
+      // impersonation. Distinto dos papéis por organização (acima). Os endpoints
+      // ficam sob `/auth/admin/*` e o front consome via `authClient.admin.*`.
+      // O 1º admin vem de ADMIN_EMAILS (promovido nos databaseHooks). Ver
+      // UPGRADES.md → "RBAC + painel admin".
+      admin({
+        defaultRole: 'user',
+        adminRoles: ['admin'],
+        impersonationSessionDuration: 60 * 60, // 1h
       }),
     ],
     emailAndPassword: {
@@ -142,6 +157,20 @@ export function createAuthConfig(): BetterAuthOptions {
           // criar o usuário e a sessão. Contas antigas sem org ganham uma no
           // próximo login.
           before: async session => {
+            // Busca o usuário uma vez (reusado abaixo na criação da org).
+            const user = await prisma.users.findUnique({
+              where: { id: session.userId },
+              select: { name: true, email: true, role: true },
+            })
+            // Sincroniza super-admin: promove contas que entraram em
+            // ADMIN_EMAILS depois de criadas. Idempotente, roda a cada login.
+            if (isAdminEmail(user?.email) && user?.role !== 'admin') {
+              await prisma.users.update({
+                where: { id: session.userId },
+                data: { role: 'admin' },
+              })
+            }
+
             const existing = await prisma.member.findFirst({
               where: { userId: session.userId },
               orderBy: { createdAt: 'asc' },
@@ -157,10 +186,6 @@ export function createAuthConfig(): BetterAuthOptions {
             }
             // Primeiro acesso: cria a org pessoal (owner) e já ativa.
             try {
-              const user = await prisma.users.findUnique({
-                where: { id: session.userId },
-                select: { name: true, email: true },
-              })
               const base = slugify(
                 user?.name || user?.email?.split('@')[0] || 'org',
               )

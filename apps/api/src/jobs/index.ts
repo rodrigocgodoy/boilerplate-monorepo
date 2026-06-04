@@ -16,8 +16,10 @@ export const jobs: JobRunner<typeof handlers> = createJobRunner({
   redisUrl: env.REDIS_URL || undefined,
   handlers,
   schedules: [
-    // Todo dia às 03:00 — expira assinaturas com período vencido.
+    // Todo dia às 03:00 — expira assinaturas pagas com período vencido.
     { job: 'sweep-subscriptions', pattern: '0 3 * * *' },
+    // Todo dia às 03:30 — expira trials terminados sem conversão.
+    { job: 'sweep-trials', pattern: '30 3 * * *' },
   ],
 })
 
