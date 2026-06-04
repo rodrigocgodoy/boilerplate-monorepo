@@ -23,8 +23,8 @@ pnpm --filter app test:e2e:ui         # runner visual do Playwright
 
 | Onde | Tipo | Cobre |
 |------|------|-------|
-| `apps/api/test/payment.test.ts` | integração (`app.inject`) | guards das rotas: 503 sem API key, 400 do Zod, 401 do webhook, 401 sem sessão |
-| `apps/api/test/webhook-signature.test.ts` | unit | HMAC do webhook (assinatura válida/inválida, corpo adulterado) |
+| `apps/api/test/*.test.ts` | integração (`app.inject`) + unit | guards das rotas (401/402/403/503), HMAC do webhook, jobIds idempotentes, quota/escopos/categorias (funções puras) |
+| `apps/api/test/*.int.test.ts` | **integração com banco** | fluxos com Postgres real: entitlements (consumo/limite/seats), audit (record/list), notifications (notify/preferências), api-keys (create→verify→revoke), export LGPD |
 | `packages/ui/test/button.test.tsx` | componente (jsdom) | render, clique e estado disabled do `Button` |
 | `apps/app/e2e/login.spec.ts` | E2E (Playwright) | a tela de login renderiza |
 
@@ -39,6 +39,26 @@ pnpm --filter app test:e2e:ui         # runner visual do Playwright
   de Postgres — cobrem os caminhos que respondem antes de qualquer query.
 - **Env hermético:** o `vitest.config.ts` da API define `test.env` (secrets de
   teste, `DATABASE_URL` dummy), então os testes não dependem do seu `.env`.
+- **Testes de integração com banco (`*.int.test.ts`):** rodam **só quando
+  `TEST_DATABASE_URL` está setado** — senão, `describeDb` (= `describe.skip`) os
+  pula e o `pnpm test` segue só com os unitários (continua funcionando sem
+  infra). Quando há banco, o config aponta o `DATABASE_URL` para ele e desliga o
+  paralelismo de arquivos (`fileParallelism: false`) — eles compartilham o mesmo
+  Postgres e o `resetDb()` (TRUNCATE … CASCADE no `beforeEach`) de um arquivo não
+  pode apagar dados de outro. Fixtures (`createUser`/`createOrg`/`createPlan`) e
+  helpers ficam em `test/helpers/db.ts`. **No CI**, o job `quality` sobe um
+  Postgres, roda `migrate deploy` e seta `TEST_DATABASE_URL` — então a integração
+  roda a cada PR.
+
+**Rodar a integração localmente** (não toca no banco de dev — use um separado):
+
+```bash
+docker exec boilerplate-postgres psql -U postgres -c 'CREATE DATABASE boilerplate_test;'
+DATABASE_URL='postgresql://postgres:postgres@localhost:5432/boilerplate_test?schema=public' \
+  pnpm --filter @repo/database exec prisma migrate deploy
+TEST_DATABASE_URL='postgresql://postgres:postgres@localhost:5432/boilerplate_test?schema=public' \
+  pnpm --filter @repo/api test
+```
 - **Turbo:** o task `test` tem `dependsOn: ["^build"]` porque `@repo/database`
   é consumido como `dist` (precisa estar buildado).
 - **Playwright:** sobe o dev server do app (`webServer`) e testa no Chromium.
@@ -46,10 +66,6 @@ pnpm --filter app test:e2e:ui         # runner visual do Playwright
 
 ## Próximos passos (não incluídos nesta fundação)
 
-- **Integração com banco:** para testar rotas que consultam o DB (`/health`,
-  sessão real, persistência de pagamento/assinatura), aponte `DATABASE_URL`
-  para um banco/schema de teste e rode migrations + truncate entre os testes
-  (ex.: um `globalSetup` que cria um schema dedicado).
 - **E2E autenticado** (login → dashboard → checkout): suba a stack completa
   (`pnpm dev` na raiz: API + Postgres + app) e crie um usuário via API no
   `beforeAll` (ou um storage state de sessão reaproveitável).
