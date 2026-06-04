@@ -27,6 +27,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
+import { PlanUsageCard } from '@/components/plan-usage-card'
 
 export const Route = createFileRoute('/_app/subscription')({
   component: Subscription,
@@ -147,6 +148,9 @@ function Subscription() {
           </CardFooter>
         )}
       </Card>
+
+      {/* Uso do plano (entitlements / limites) */}
+      <PlanUsageCard />
 
       {/* Catálogo de planos */}
       <section className="grid gap-4 sm:grid-cols-3">

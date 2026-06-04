@@ -254,6 +254,30 @@ export const en = {
       stop: 'Stop impersonating',
     },
   },
+  entitlements: {
+    title: 'Plan usage',
+    description: 'Your plan consumption and limits for the current period.',
+    period: 'Period: {{period}}',
+    unlimited: 'Unlimited',
+    usage: '{{used}} of {{limit}}',
+    remaining: '{{remaining}} remaining',
+    quotaExceeded: 'Plan limit reached for this resource.',
+    metrics: {
+      seats: 'Seats',
+      projects: 'Projects',
+      apiCalls: 'API calls',
+    },
+    demo: {
+      title: 'Metering demo',
+      description:
+        'Consumes 1 unit of a metered metric (respects the plan quota).',
+      metric: 'Metric',
+      consume: 'Consume 1',
+      consuming: 'Consuming...',
+      consumed: 'Consumed. Usage: {{used}}{{limit}}.',
+      exceeded: 'Limit reached for {{metric}}.',
+    },
+  },
   audit: {
     nav: 'Audit',
     title: 'Audit log',
