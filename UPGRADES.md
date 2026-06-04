@@ -675,3 +675,36 @@ await app.services.notifications.notify(userId, {
   SSE/WebSocket.
 - O e-mail só sai com `RESEND_API_KEY` (senão é logado — ver "E-mail
   transacional"); e respeita a preferência `email` da categoria.
+
+---
+
+## Product analytics + feature flags (PostHog)
+
+Analytics de produto + **feature flags** + **session replay** num pacote só
+(`posthog-js`), no front. **Opt-in**: sem `VITE_POSTHOG_KEY` é no-op.
+
+**Ativar:**
+
+1. Crie um projeto no [PostHog](https://posthog.com) e pegue a **Project API Key**.
+2. **.env** — `VITE_POSTHOG_KEY` e (opcional) `VITE_POSTHOG_HOST`
+   (`https://us.i.posthog.com` ou `https://eu.i.posthog.com`).
+3. Pronto. Session replay liga/desliga no painel do projeto.
+
+**Como funciona (`apps/app/src/analytics.ts`):**
+
+- `initAnalytics()` em `main.tsx` inicializa o PostHog (no-op sem key).
+- **Pageviews:** capturados manualmente a cada navegação resolvida do router
+  (SPA) — `router.subscribe('onResolved', capturePageview)`.
+- **Identidade:** `identifyUser(user)` no layout `_app` (quando há sessão) e
+  `resetAnalytics()` no logout.
+- **Eventos:** `captureEvent('nome', props)` de qualquer lugar do app.
+- **Feature flags:** hook `useFeatureFlag('minha-flag')` (reativo; `false` sem
+  analytics). Exemplo no dashboard: badge "Beta" via a flag `beta-banner`.
+
+**Atenção:**
+
+- `posthog-js` adiciona peso ao bundle; carregue sob demanda (dynamic import) se
+  precisar.
+- Para flags/eventos no **servidor** (ex.: gating de API), adicione
+  `posthog-node` na API.
+- Respeite consentimento/cookies do usuário conforme a sua política (LGPD/GDPR).
