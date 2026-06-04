@@ -69,7 +69,11 @@ export function createAuthConfig(): BetterAuthOptions {
     ],
     emailAndPassword: {
       enabled: true,
-      // E-mail de reset (disparado sob demanda). Ver @repo/emails.
+      // Invalida as sessões existentes ao redefinir a senha (higiene de segurança).
+      revokeSessionsOnPasswordReset: true,
+      // E-mail de reset (disparado sob demanda). O `url` já embute o callbackURL
+      // absoluto que o client manda em `requestPasswordReset({ redirectTo })`
+      // (a página /reset-password do app). Ver @repo/emails.
       sendResetPassword: async ({ user, url }) => {
         await sendPasswordResetEmail({ to: user.email, name: user.name, url })
       },

@@ -42,3 +42,33 @@ test('rota protegida sem sessão preserva o destino no ?redirect=', async ({
   )
   await expect(page.locator('#signin-email')).toBeVisible()
 })
+
+test('login leva ao fluxo de "esqueci a senha"', async ({ page }) => {
+  await page.route('**/auth/get-session*', route =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: 'null',
+    }),
+  )
+  await page.goto('/login')
+  await page.getByRole('link', { name: /esqueceu|forgot|olvidaste/i }).click()
+  await page.waitForURL(/\/forgot-password/)
+  await expect(page.locator('#forgot-email')).toBeVisible()
+})
+
+test('reset-password sem token mostra link inválido', async ({ page }) => {
+  await page.route('**/auth/get-session*', route =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: 'null',
+    }),
+  )
+  // Sem ?token=, a página oferece pedir um novo link em vez do formulário.
+  await page.goto('/reset-password')
+  await expect(page.locator('#reset-password')).toHaveCount(0)
+  await expect(
+    page.getByRole('link', { name: /novo link|new link|nuevo enlace/i }),
+  ).toBeVisible()
+})

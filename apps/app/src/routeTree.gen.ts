@@ -12,7 +12,9 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthRouteImport } from './routes/_auth'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as AppIndexRouteImport } from './routes/_app/index'
+import { Route as AuthResetPasswordRouteImport } from './routes/_auth/reset-password'
 import { Route as AuthLoginRouteImport } from './routes/_auth/login'
+import { Route as AuthForgotPasswordRouteImport } from './routes/_auth/forgot-password'
 import { Route as AppSubscriptionRouteImport } from './routes/_app/subscription'
 import { Route as AppOrganizationRouteImport } from './routes/_app/organization'
 import { Route as AppDashboardRouteImport } from './routes/_app/dashboard'
@@ -34,9 +36,19 @@ const AppIndexRoute = AppIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AppRoute,
 } as any)
+const AuthResetPasswordRoute = AuthResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
+  getParentRoute: () => AuthRoute,
+} as any)
 const AuthLoginRoute = AuthLoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AuthForgotPasswordRoute = AuthForgotPasswordRouteImport.update({
+  id: '/forgot-password',
+  path: '/forgot-password',
   getParentRoute: () => AuthRoute,
 } as any)
 const AppSubscriptionRoute = AppSubscriptionRouteImport.update({
@@ -81,7 +93,9 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof AppDashboardRoute
   '/organization': typeof AppOrganizationRoute
   '/subscription': typeof AppSubscriptionRoute
+  '/forgot-password': typeof AuthForgotPasswordRoute
   '/login': typeof AuthLoginRoute
+  '/reset-password': typeof AuthResetPasswordRoute
   '/premium': typeof AppPaidPremiumRoute
   '/accept-invitation/$invitationId': typeof AppAcceptInvitationInvitationIdRoute
 }
@@ -91,7 +105,9 @@ export interface FileRoutesByTo {
   '/dashboard': typeof AppDashboardRoute
   '/organization': typeof AppOrganizationRoute
   '/subscription': typeof AppSubscriptionRoute
+  '/forgot-password': typeof AuthForgotPasswordRoute
   '/login': typeof AuthLoginRoute
+  '/reset-password': typeof AuthResetPasswordRoute
   '/premium': typeof AppPaidPremiumRoute
   '/accept-invitation/$invitationId': typeof AppAcceptInvitationInvitationIdRoute
 }
@@ -104,7 +120,9 @@ export interface FileRoutesById {
   '/_app/dashboard': typeof AppDashboardRoute
   '/_app/organization': typeof AppOrganizationRoute
   '/_app/subscription': typeof AppSubscriptionRoute
+  '/_auth/forgot-password': typeof AuthForgotPasswordRoute
   '/_auth/login': typeof AuthLoginRoute
+  '/_auth/reset-password': typeof AuthResetPasswordRoute
   '/_app/': typeof AppIndexRoute
   '/_app/_paid/premium': typeof AppPaidPremiumRoute
   '/_app/accept-invitation/$invitationId': typeof AppAcceptInvitationInvitationIdRoute
@@ -117,7 +135,9 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/organization'
     | '/subscription'
+    | '/forgot-password'
     | '/login'
+    | '/reset-password'
     | '/premium'
     | '/accept-invitation/$invitationId'
   fileRoutesByTo: FileRoutesByTo
@@ -127,7 +147,9 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/organization'
     | '/subscription'
+    | '/forgot-password'
     | '/login'
+    | '/reset-password'
     | '/premium'
     | '/accept-invitation/$invitationId'
   id:
@@ -139,7 +161,9 @@ export interface FileRouteTypes {
     | '/_app/dashboard'
     | '/_app/organization'
     | '/_app/subscription'
+    | '/_auth/forgot-password'
     | '/_auth/login'
+    | '/_auth/reset-password'
     | '/_app/'
     | '/_app/_paid/premium'
     | '/_app/accept-invitation/$invitationId'
@@ -173,11 +197,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppIndexRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_auth/reset-password': {
+      id: '/_auth/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof AuthResetPasswordRouteImport
+      parentRoute: typeof AuthRoute
+    }
     '/_auth/login': {
       id: '/_auth/login'
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof AuthLoginRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/_auth/forgot-password': {
+      id: '/_auth/forgot-password'
+      path: '/forgot-password'
+      fullPath: '/forgot-password'
+      preLoaderRoute: typeof AuthForgotPasswordRouteImport
       parentRoute: typeof AuthRoute
     }
     '/_app/subscription': {
@@ -266,11 +304,15 @@ const AppRouteChildren: AppRouteChildren = {
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
 
 interface AuthRouteChildren {
+  AuthForgotPasswordRoute: typeof AuthForgotPasswordRoute
   AuthLoginRoute: typeof AuthLoginRoute
+  AuthResetPasswordRoute: typeof AuthResetPasswordRoute
 }
 
 const AuthRouteChildren: AuthRouteChildren = {
+  AuthForgotPasswordRoute: AuthForgotPasswordRoute,
   AuthLoginRoute: AuthLoginRoute,
+  AuthResetPasswordRoute: AuthResetPasswordRoute,
 }
 
 const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
