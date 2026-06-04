@@ -1,6 +1,7 @@
 import { authClient } from '@repo/utils/auth-client'
 import { createFileRoute, Outlet, redirect } from '@tanstack/react-router'
 import { useEffect } from 'react'
+import { identifyUser } from '@/analytics'
 import { ImpersonationBanner } from '@/components/impersonation-banner'
 
 export const Route = createFileRoute('/_app')({
@@ -43,8 +44,19 @@ function useEnsureActiveOrganization() {
   }, [orgs, active, orgsPending, activePending])
 }
 
+/** Identifica o usuário no PostHog quando a sessão está disponível. No-op
+ * sem analytics. */
+function useAnalyticsIdentify() {
+  const { data: session } = authClient.useSession()
+  const user = session?.user
+  useEffect(() => {
+    if (user) identifyUser({ id: user.id, email: user.email, name: user.name })
+  }, [user])
+}
+
 function RouteComponent() {
   useEnsureActiveOrganization()
+  useAnalyticsIdentify()
   return (
     <>
       <ImpersonationBanner />

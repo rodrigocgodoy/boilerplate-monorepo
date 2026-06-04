@@ -1,4 +1,5 @@
 import { useGetMe } from '@repo/api-client/hooks'
+import { Badge } from '@repo/ui/components/badge'
 import { Button } from '@repo/ui/components/button'
 import {
   Card,
@@ -12,6 +13,7 @@ import { authClient } from '@repo/utils/auth-client'
 import { useQueryClient } from '@tanstack/react-query'
 import { createFileRoute, Link, useRouter } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
+import { resetAnalytics, useFeatureFlag } from '@/analytics'
 import { LanguageSwitcher } from '@/components/language-switcher'
 import { NotificationBell } from '@/components/notification-bell'
 import { OrgSwitcher } from '@/components/org-switcher'
@@ -39,8 +41,11 @@ function Dashboard() {
   const { data: session } = authClient.useSession()
   const isAdmin =
     (session?.user as { role?: string | null } | undefined)?.role === 'admin'
+  // Exemplo de feature flag do PostHog (#15) — habilite "beta-banner" no painel.
+  const betaEnabled = useFeatureFlag('beta-banner')
 
   async function handleSignOut() {
+    resetAnalytics()
     await authClient.signOut()
     queryClient.clear()
     await router.navigate({ to: '/login' })
@@ -49,7 +54,10 @@ function Dashboard() {
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 p-6">
       <header className="flex items-center justify-between gap-3">
-        <h1 className="font-semibold text-2xl">{t('title')}</h1>
+        <h1 className="flex items-center gap-2 font-semibold text-2xl">
+          {t('title')}
+          {betaEnabled && <Badge variant="secondary">Beta</Badge>}
+        </h1>
         <div className="flex items-center gap-2">
           <NotificationBell />
           <OrgSwitcher />
