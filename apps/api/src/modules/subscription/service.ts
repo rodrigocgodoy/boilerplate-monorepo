@@ -28,6 +28,11 @@ function addInterval(from: Date, interval: string): Date {
 function isActive(sub: Subscriptions | null, now = new Date()): boolean {
   if (!sub) return false
   if (!ACTIVE_STATUSES.includes(sub.status)) return false
+  // Trial vale enquanto não passar de `trialEndsAt` (gating em tempo real, sem
+  // depender do sweep). Trials usam `trialEndsAt`, não `currentPeriodEnd`.
+  if (sub.status === 'TRIALING' && sub.trialEndsAt) {
+    return sub.trialEndsAt > now
+  }
   return !sub.currentPeriodEnd || sub.currentPeriodEnd > now
 }
 

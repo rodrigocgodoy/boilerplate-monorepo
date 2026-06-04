@@ -26,11 +26,15 @@ function Dashboard() {
     'payment',
     'subscription',
     'organization',
+    'admin',
   ])
   const router = useRouter()
   const queryClient = useQueryClient()
   const { data, isLoading } = useGetMe()
   const me = data?.data
+  const { data: session } = authClient.useSession()
+  const isAdmin =
+    (session?.user as { role?: string | null } | undefined)?.role === 'admin'
 
   async function handleSignOut() {
     await authClient.signOut()
@@ -44,6 +48,11 @@ function Dashboard() {
         <h1 className="font-semibold text-2xl">{t('title')}</h1>
         <div className="flex items-center gap-2">
           <OrgSwitcher />
+          {isAdmin && (
+            <Button asChild variant="outline" size="sm">
+              <Link to="/admin">{t('admin:nav')}</Link>
+            </Button>
+          )}
           <Button asChild variant="outline" size="sm">
             <Link to="/organization">{t('organization:members')}</Link>
           </Button>

@@ -18,7 +18,9 @@ import { Route as AppSubscriptionRouteImport } from './routes/_app/subscription'
 import { Route as AppOrganizationRouteImport } from './routes/_app/organization'
 import { Route as AppDashboardRouteImport } from './routes/_app/dashboard'
 import { Route as AppBillingRouteImport } from './routes/_app/billing'
+import { Route as AppAdminRouteImport } from './routes/_app/admin'
 import { Route as AppPaidRouteImport } from './routes/_app/_paid'
+import { Route as AppAdminIndexRouteImport } from './routes/_app/admin/index'
 import { Route as AppAcceptInvitationInvitationIdRouteImport } from './routes/_app/accept-invitation.$invitationId'
 import { Route as AppPaidPremiumRouteImport } from './routes/_app/_paid/premium'
 
@@ -65,9 +67,19 @@ const AppBillingRoute = AppBillingRouteImport.update({
   path: '/billing',
   getParentRoute: () => AppRoute,
 } as any)
+const AppAdminRoute = AppAdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppPaidRoute = AppPaidRouteImport.update({
   id: '/_paid',
   getParentRoute: () => AppRoute,
+} as any)
+const AppAdminIndexRoute = AppAdminIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AppAdminRoute,
 } as any)
 const AppAcceptInvitationInvitationIdRoute =
   AppAcceptInvitationInvitationIdRouteImport.update({
@@ -83,6 +95,7 @@ const AppPaidPremiumRoute = AppPaidPremiumRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
+  '/admin': typeof AppAdminRouteWithChildren
   '/billing': typeof AppBillingRoute
   '/dashboard': typeof AppDashboardRoute
   '/organization': typeof AppOrganizationRoute
@@ -91,6 +104,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof AuthLoginRoute
   '/premium': typeof AppPaidPremiumRoute
   '/accept-invitation/$invitationId': typeof AppAcceptInvitationInvitationIdRoute
+  '/admin/': typeof AppAdminIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof AppIndexRoute
@@ -102,12 +116,14 @@ export interface FileRoutesByTo {
   '/login': typeof AuthLoginRoute
   '/premium': typeof AppPaidPremiumRoute
   '/accept-invitation/$invitationId': typeof AppAcceptInvitationInvitationIdRoute
+  '/admin': typeof AppAdminIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_app': typeof AppRouteWithChildren
   '/_auth': typeof AuthRouteWithChildren
   '/_app/_paid': typeof AppPaidRouteWithChildren
+  '/_app/admin': typeof AppAdminRouteWithChildren
   '/_app/billing': typeof AppBillingRoute
   '/_app/dashboard': typeof AppDashboardRoute
   '/_app/organization': typeof AppOrganizationRoute
@@ -117,11 +133,13 @@ export interface FileRoutesById {
   '/_app/': typeof AppIndexRoute
   '/_app/_paid/premium': typeof AppPaidPremiumRoute
   '/_app/accept-invitation/$invitationId': typeof AppAcceptInvitationInvitationIdRoute
+  '/_app/admin/': typeof AppAdminIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/admin'
     | '/billing'
     | '/dashboard'
     | '/organization'
@@ -130,6 +148,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/premium'
     | '/accept-invitation/$invitationId'
+    | '/admin/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -141,11 +160,13 @@ export interface FileRouteTypes {
     | '/login'
     | '/premium'
     | '/accept-invitation/$invitationId'
+    | '/admin'
   id:
     | '__root__'
     | '/_app'
     | '/_auth'
     | '/_app/_paid'
+    | '/_app/admin'
     | '/_app/billing'
     | '/_app/dashboard'
     | '/_app/organization'
@@ -155,6 +176,7 @@ export interface FileRouteTypes {
     | '/_app/'
     | '/_app/_paid/premium'
     | '/_app/accept-invitation/$invitationId'
+    | '/_app/admin/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -227,12 +249,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppBillingRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/admin': {
+      id: '/_app/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AppAdminRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/_paid': {
       id: '/_app/_paid'
       path: ''
       fullPath: '/'
       preLoaderRoute: typeof AppPaidRouteImport
       parentRoute: typeof AppRoute
+    }
+    '/_app/admin/': {
+      id: '/_app/admin/'
+      path: '/'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AppAdminIndexRouteImport
+      parentRoute: typeof AppAdminRoute
     }
     '/_app/accept-invitation/$invitationId': {
       id: '/_app/accept-invitation/$invitationId'
@@ -262,8 +298,21 @@ const AppPaidRouteChildren: AppPaidRouteChildren = {
 const AppPaidRouteWithChildren =
   AppPaidRoute._addFileChildren(AppPaidRouteChildren)
 
+interface AppAdminRouteChildren {
+  AppAdminIndexRoute: typeof AppAdminIndexRoute
+}
+
+const AppAdminRouteChildren: AppAdminRouteChildren = {
+  AppAdminIndexRoute: AppAdminIndexRoute,
+}
+
+const AppAdminRouteWithChildren = AppAdminRoute._addFileChildren(
+  AppAdminRouteChildren,
+)
+
 interface AppRouteChildren {
   AppPaidRoute: typeof AppPaidRouteWithChildren
+  AppAdminRoute: typeof AppAdminRouteWithChildren
   AppBillingRoute: typeof AppBillingRoute
   AppDashboardRoute: typeof AppDashboardRoute
   AppOrganizationRoute: typeof AppOrganizationRoute
@@ -274,6 +323,7 @@ interface AppRouteChildren {
 
 const AppRouteChildren: AppRouteChildren = {
   AppPaidRoute: AppPaidRouteWithChildren,
+  AppAdminRoute: AppAdminRouteWithChildren,
   AppBillingRoute: AppBillingRoute,
   AppDashboardRoute: AppDashboardRoute,
   AppOrganizationRoute: AppOrganizationRoute,

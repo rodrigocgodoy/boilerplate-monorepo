@@ -1,4 +1,8 @@
-import { emailOTPClient, organizationClient } from 'better-auth/client/plugins'
+import {
+  adminClient,
+  emailOTPClient,
+  organizationClient,
+} from 'better-auth/client/plugins'
 import { createAuthClient } from 'better-auth/react'
 import { getApiBaseUrl } from './api-url.js'
 import { ac, roles } from './permissions.js'
@@ -16,5 +20,9 @@ export const authClient = createAuthClient({
   plugins: [
     organizationClient({ teams: { enabled: true }, ac, roles }),
     emailOTPClient(),
+    // RBAC de plataforma (super-admin): expõe `authClient.admin.*`
+    // (listUsers, setRole, banUser, impersonateUser…). Roles padrão do plugin
+    // (admin | user); o server correspondente está em configs.ts.
+    adminClient(),
   ],
 })
