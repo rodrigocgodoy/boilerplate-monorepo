@@ -59,13 +59,18 @@ sem infra**.
 - Job **`email`** — despacha **todos** os e-mails (verificação, reset, convite,
   billing) via `@repo/emails`. Os hooks do Better Auth e o billing chamam
   `enqueue('email', { template, … })` — com Redis, todo envio ganha retries.
-- Job **`subscription-webhook`** — a rota `POST /payments/webhook` valida o HMAC
-  e enfileira os eventos `subscription.*`; o processamento (atualizar status,
-  histórico, e-mail) roda no worker, **async + idempotente** (o `jobId` deriva do
-  evento/pagamento, dedup contra reentregas do webhook). Sem Redis, roda inline
-  (igual antes).
+- Jobs **`subscription-webhook`** e **`billing-webhook`** — a rota
+  `POST /payments/webhook` valida o HMAC e enfileira **todo** evento: os
+  `subscription.*` no primeiro e a **cobrança avulsa** (`billing.*` / PIX) no
+  segundo. O processamento (status, histórico, e-mail) roda no worker, **async +
+  idempotente** — o `jobId` deriva do evento/cobrança (`wh_<event>_<id>`), dedup
+  contra reentregas do webhook. Sem Redis, roda inline (igual antes).
 - Job agendado **`sweep-subscriptions`** — todo dia às 03:00, expira assinaturas
-  com `currentPeriodEnd` vencido (não depende só do webhook).
+  pagas com `currentPeriodEnd` vencido (renovação não chegou).
+- Job agendado **`sweep-trials`** — todo dia às 03:30, expira trials terminados
+  (`status=TRIALING` + `trialEndsAt` no passado) sem conversão. O gating já trata
+  o trial como expirado em tempo real (via `trialEndsAt`); este job mantém o
+  estado coerente no banco.
 
 **Adicionar um job:**
 
@@ -365,3 +370,45 @@ precisa estar logado (mesmo e-mail) para aceitar.
   diff (mantenha só as back-relations novas e reaplique `@db.Uuid`).
 - Roles: `owner`/`admin`/`member` (permissões checadas no server). Para roles
   customizadas/teams avançados, veja a skill `organization-best-practices`.
+
+---
+
+## RBAC + painel admin (plugin admin)
+
+RBAC de **plataforma** via plugin `admin` do Better Auth: uma role de **sistema**
+(`admin` | `user`) por usuário, ban e impersonation — distinta dos papéis por
+organização (`owner`/`admin`/`member`, que valem dentro de cada tenant).
+
+### Como funciona
+
+- **Server:** plugin `admin({ defaultRole, adminRoles, impersonationSessionDuration })`
+  em `better-auth/configs.ts`. **Client:** `adminClient()` em
+  `packages/utils/auth-client.ts`.
+- **Schema:** o plugin adiciona `role`, `banned`, `banReason`, `banExpires` em
+  `users` e `impersonatedBy` em `sessions` (migration `admin_plugin_rbac`).
+- **Endpoints:** servidos pelo Better Auth em `/auth/admin/*` (list-users,
+  set-role, ban-user, unban-user, impersonate-user, stop-impersonating,
+  revoke-user-sessions, remove-user…) e consumidos no front via
+  `authClient.admin.*`. Não há módulo de API próprio nem hooks do Kubb.
+- **Frontend:** área `/admin` (`apps/app/src/routes/_app/admin`) guardada pela
+  role de sistema (quem não é `admin` é redirecionado). Página de gestão de
+  usuários: busca, paginação, trocar role, ban/unban (motivo + expiração),
+  impersonar, revogar sessões e remover. Link "Admin" no header (só admins) e
+  banner global de impersonation (em `_app`) com "parar de impersonar".
+
+### Primeiro admin (super-admin)
+
+Defina `ADMIN_EMAILS` (lista separada por vírgula) no `.env`. Os hooks do Better
+Auth promovem esses e-mails a `role='admin'` — no signup e, para contas já
+existentes, no próximo login (idempotente). Vazio = nenhum admin automático
+(promova manualmente pelo banco ou por outro admin já existente).
+
+### Atenção
+
+- A barreira real é o **servidor** (cada endpoint exige a role/permissão); o
+  guard de rota no front é só UX.
+- Não dá pra banir/remover/impersonar a própria conta pela UI (botões
+  desabilitados); o servidor também recusa casos inválidos.
+- Permissões finas (além de `admin`/`user`) podem ser modeladas com
+  `ac`/`roles` próprios do plugin admin — veja a skill
+  `better-auth-best-practices`.
