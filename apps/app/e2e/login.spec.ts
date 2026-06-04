@@ -23,3 +23,22 @@ test('a tela de login renderiza os campos de e-mail e senha', async ({
   await expect(page.locator('#signin-email')).toBeVisible()
   await expect(page.locator('#signin-password')).toBeVisible()
 })
+
+test('rota protegida sem sessão preserva o destino no ?redirect=', async ({
+  page,
+}) => {
+  // Sem sessão: acessar um convite deve cair no login mantendo o destino.
+  await page.route('**/auth/get-session*', route =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: 'null',
+    }),
+  )
+  await page.goto('/accept-invitation/test-invitation-id')
+  await page.waitForURL(/\/login\?redirect=/)
+  await expect(page).toHaveURL(
+    /redirect=.*accept-invitation.*test-invitation-id/,
+  )
+  await expect(page.locator('#signin-email')).toBeVisible()
+})

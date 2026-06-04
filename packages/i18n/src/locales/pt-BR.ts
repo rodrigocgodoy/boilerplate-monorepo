@@ -148,6 +148,12 @@ export const ptBR = {
       accepted: 'Convite aceito!',
       failed: 'Não foi possível aceitar o convite.',
       cta: 'Aceitar',
+      invitedTo: 'Você foi convidado para {{org}}.',
+      notForYou: 'Este convite não é para a conta logada.',
+      useInviteEmail: 'Entre com o e-mail que recebeu o convite.',
+      switchAccount: 'Trocar de conta',
+      verifyFirst: 'Confirme seu e-mail antes de aceitar o convite.',
+      invalid: 'Convite inválido ou expirado.',
     },
     createFailed: 'Falha ao criar a organização',
     teams: {

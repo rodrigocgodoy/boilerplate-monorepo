@@ -3,7 +3,7 @@ import { createFileRoute, Outlet, redirect } from '@tanstack/react-router'
 import { useEffect } from 'react'
 
 export const Route = createFileRoute('/_app')({
-  beforeLoad: async ({ context }) => {
+  beforeLoad: async ({ context, location }) => {
     const session = await context.queryClient.ensureQueryData({
       queryKey: ['session'],
       queryFn: () => authClient.getSession(),
@@ -11,7 +11,8 @@ export const Route = createFileRoute('/_app')({
     })
 
     if (!session.data) {
-      throw redirect({ to: '/login' })
+      // Preserva o destino (ex.: /accept-invitation/:id) para voltar após login.
+      throw redirect({ to: '/login', search: { redirect: location.href } })
     }
 
     return {

@@ -71,18 +71,34 @@ O botão "Continuar com Google" já existe no app; só falta as credenciais.
 
 ---
 
-## Email transacional (Resend)
+## E-mail transacional (Resend + React Email)
 
-Para verificação de email, reset de senha e notificações.
+Já vem implementado no pacote **`@repo/emails`** (templates React Email +
+helper de envio via Resend) e fiado nos fluxos de auth/org/billing.
 
-1. ```bash
-   pnpm --filter @repo/api add resend
-   ```
-2. **.env** — adicione `RESEND_API_KEY=...`.
-3. **environment.ts** — adicione `RESEND_API_KEY: z.string()`.
-4. **better-auth/configs.ts** — use os hooks de email do Better Auth
-   (`emailAndPassword.sendResetPassword`, `emailVerification.sendVerificationEmail`).
-   Veja a skill `.claude/skills/email-and-password-best-practices`.
+**Ativar (produção):**
+
+1. **.env** — preencha `RESEND_API_KEY` e `EMAIL_FROM` (use um remetente de
+   **domínio verificado** no Resend).
+2. Pronto. Sem a key, os e-mails são **logados no console** (dev) em vez de
+   enviados — `@repo/emails` cai nesse fallback automaticamente.
+
+**O que já dispara e-mail:**
+
+- **Verificação de e-mail** no signup (`emailVerification.sendOnSignUp`; não
+  bloqueia login — ligue `requireEmailVerification` se quiser exigir).
+- **Reset de senha** (`emailAndPassword.sendResetPassword`).
+- **Convite de organização** (`organization.sendInvitationEmail`).
+- **Billing**: ativação e cancelamento de assinatura → e-mail ao owner da org
+  (no webhook do `SubscriptionService`).
+
+**Templates e preview:**
+
+- Templates em `packages/emails/src/emails/*.tsx` (verificação, reset,
+  convite, assinatura) + casca compartilhada `_layout.tsx`.
+- Preview visual: `pnpm email:dev` (servidor do React Email).
+- Para um novo e-mail: crie o template e exporte um sender em
+  `packages/emails/src/index.tsx`.
 
 ---
 
@@ -283,10 +299,10 @@ dos recursos de billing passa a ser a **organização ativa** da sessão.
 
 ### Convites
 
-Sem e-mail transacional ainda (ver Resend acima): `sendInvitationEmail` **loga**
-o link de aceite (`{APP_URL}/accept-invitation/{id}`) e a UI mostra "copiar
-link". Ao ligar o Resend, troque o corpo de `sendInvitationEmail` por um envio
-real. O convidado precisa estar logado (mesmo e-mail) para aceitar.
+`sendInvitationEmail` envia o e-mail de convite via `@repo/emails` (com o link
+`{APP_URL}/accept-invitation/{id}`). Sem `RESEND_API_KEY`, o link é logado no
+console (dev) — a UI também mostra "copiar link" como alternativa. O convidado
+precisa estar logado (mesmo e-mail) para aceitar.
 
 ### Atenção
 

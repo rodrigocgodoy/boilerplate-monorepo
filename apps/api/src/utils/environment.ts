@@ -28,6 +28,10 @@ const envSchema = z.object({
   // Google OAuth — opcionais (deixe vazio para usar só email/senha)
   GOOGLE_CLIENT_ID: z.string().default(''),
   GOOGLE_CLIENT_SECRET: z.string().default(''),
+  // E-mail transacional (Resend) — opcional. Vazio = e-mails são logados no
+  // console (dev) em vez de enviados. Ver UPGRADES.md.
+  RESEND_API_KEY: z.string().default(''),
+  EMAIL_FROM: z.string().default('Boilerplate <onboarding@resend.dev>'),
   // AbacatePay — opcionais (deixe vazio para desabilitar pagamentos).
   // ABACATEPAY_WEBHOOK_SECRET é o valor que você define no painel e que chega
   // como query param `?webhookSecret=...` nas chamadas de webhook.

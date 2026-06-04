@@ -1,4 +1,9 @@
 import { prisma } from '@repo/database'
+import {
+  sendOrganizationInvitationEmail,
+  sendPasswordResetEmail,
+  sendVerificationEmail,
+} from '@repo/emails'
 import { ac, roles } from '@repo/utils/permissions'
 import type { BetterAuthOptions, betterAuth } from 'better-auth'
 import { prismaAdapter } from 'better-auth/adapters/prisma'
@@ -46,23 +51,50 @@ export function createAuthConfig(): BetterAuthOptions {
           maximumTeams: 10,
           maximumMembersPerTeam: 50,
         },
-        // Ainda não há e-mail transacional (ver UPGRADES.md → Resend). Por isso
-        // logamos o link de aceite; a UI também lista os convites pendentes com
-        // "copiar link". Ao ligar o Resend, troque por um envio de e-mail real.
+        // Envia o convite por e-mail (Resend). Sem RESEND_API_KEY, o pacote
+        // @repo/emails loga o link no console (dev). Ver UPGRADES.md.
         sendInvitationEmail: async data => {
           const url = new URL(
             `/accept-invitation/${data.invitation.id}`,
             env.APP_URL,
           ).toString()
-          // biome-ignore lint/suspicious/noConsole: log de dev até o Resend entrar
-          console.info(
-            `[org-invite] ${data.email} → "${data.organization.name}": ${url}`,
-          )
+          await sendOrganizationInvitationEmail({
+            to: data.email,
+            organizationName: data.organization.name,
+            inviterName: data.inviter.user.name,
+            url,
+          })
         },
       }),
     ],
     emailAndPassword: {
       enabled: true,
+      // E-mail de reset (disparado sob demanda). Ver @repo/emails.
+      sendResetPassword: async ({ user, url }) => {
+        await sendPasswordResetEmail({ to: user.email, name: user.name, url })
+      },
+    },
+    emailVerification: {
+      // Envia verificação no cadastro. NÃO bloqueia o login por padrão
+      // (sem `requireEmailVerification`) — ligue se quiser exigir verificação.
+      sendOnSignUp: true,
+      autoSignInAfterVerification: true,
+      sendVerificationEmail: async ({ user, url }) => {
+        // O `url` aponta pro endpoint do API (/auth/verify-email) com
+        // callbackURL=/ (raiz do API). Após verificar, o Better Auth redireciona
+        // pra esse callbackURL — reescrevemos pro app (origem em trustedOrigins)
+        // numa rota que existe, senão o usuário cai na raiz do API.
+        const verifyUrl = new URL(url)
+        verifyUrl.searchParams.set(
+          'callbackURL',
+          new URL('/dashboard', env.APP_URL).toString(),
+        )
+        await sendVerificationEmail({
+          to: user.email,
+          name: user.name,
+          url: verifyUrl.toString(),
+        })
+      },
     },
     // Google só é registrado quando as credenciais existem (ver UPGRADES.md).
     socialProviders: googleEnabled
