@@ -250,6 +250,35 @@ model AuditLogs {
   @@map("audit_logs")
 }
 
+/// Chaves de API para acesso programático (#10), com escopo por organização.
+/// O token completo (`bk_…`) só é mostrado uma vez na criação; guardamos apenas
+/// o hash SHA-256 e um prefixo visível para lookup/UI. `scopes` é um array de
+/// permissões (Json); null = sem restrição além do escopo da org.
+
+model ApiKeys {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  /// rótulo amigável definido pelo dono
+  name           String
+  /// prefixo visível do token (ex.: "bk_a1b2c3d4") — único, usado no lookup
+  prefix         String    @unique
+  /// hash SHA-256 (hex) do token completo — nunca guardamos o token em claro
+  keyHash        String
+  /// organização dona da chave
+  organizationId String    @db.Uuid
+  /// usuário que criou a chave
+  userId         String    @db.Uuid
+  /// escopos/permissões (array de strings); null = sem restrição extra
+  scopes         Json?
+  lastUsedAt     DateTime?
+  expiresAt      DateTime?
+  revokedAt      DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([organizationId])
+  @@map("api_keys")
+}
+
 // ──────────────────────────────────────────────
 // Modelos do plugin Organization do Better Auth.
 // Gerados por `pnpm auth:generate`; ajustados para o padrão @db.Uuid +

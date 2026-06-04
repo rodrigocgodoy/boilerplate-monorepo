@@ -1,3 +1,4 @@
+import { apiKeysRoute } from '@/modules/api-keys/route.js'
 import { auditRoute } from '@/modules/audit/route.js'
 import { betterAuthRoute } from '@/modules/better-auth/route.js'
 import { entitlementsRoute } from '@/modules/entitlements/route.js'
@@ -13,4 +14,5 @@ export const routesPlugin = tp(async app => {
   await app.register(subscriptionRoute)
   await app.register(entitlementsRoute)
   await app.register(auditRoute)
+  await app.register(apiKeysRoute)
 })
