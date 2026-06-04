@@ -6,6 +6,7 @@ import { EntitlementsService } from '@/modules/entitlements/service.js'
 import { MeService } from '@/modules/me/service.js'
 import { NotificationService } from '@/modules/notifications/service.js'
 import { PaymentService } from '@/modules/payment/service.js'
+import { StorageService } from '@/modules/storage/service.js'
 import { SubscriptionService } from '@/modules/subscription/service.js'
 import { tp } from '@/utils/fastify.js'
 
@@ -20,6 +21,7 @@ declare module 'fastify' {
       apiKeys: ApiKeyService
       me: MeService
       notifications: NotificationService
+      storage: StorageService
     }
   }
 }
@@ -40,5 +42,6 @@ export function createServices(): FastifyInstance['services'] {
     apiKeys: new ApiKeyService(),
     me: new MeService(),
     notifications: new NotificationService(),
+    storage: new StorageService(),
   }
 }

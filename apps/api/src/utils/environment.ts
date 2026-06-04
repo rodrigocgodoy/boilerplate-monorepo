@@ -75,6 +75,17 @@ const envSchema = z.object({
   SENTRY_ENVIRONMENT: z.string().default(''),
   // Amostragem de traces (0..1). 0 = sem performance/tracing (só erros).
   SENTRY_TRACES_SAMPLE_RATE: z.coerce.number().min(0).max(1).default(0),
+  // Upload de arquivos (S3/MinIO) — opcional. Sem `S3_BUCKET`+credenciais, as
+  // rotas de upload respondem 503. `S3_ENDPOINT` vazio = AWS S3; preencha para
+  // MinIO/R2. `S3_PUBLIC_URL` é a base pública dos objetos. Ver UPGRADES.md.
+  S3_ENDPOINT: z.string().default(''),
+  S3_ACCESS_KEY: z.string().default(''),
+  S3_SECRET_KEY: z.string().default(''),
+  S3_BUCKET: z.string().default(''),
+  S3_REGION: z.string().default('auto'),
+  S3_PUBLIC_URL: z.string().default(''),
+  // Tamanho máximo de upload de avatar (bytes). Default 2 MB.
+  AVATAR_MAX_BYTES: z.coerce.number().int().positive().default(2_097_152),
 })
 
 const _env = envSchema.safeParse(process.env)
