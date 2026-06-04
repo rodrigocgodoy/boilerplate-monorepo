@@ -86,8 +86,12 @@ helper de envio via Resend) e fiado nos fluxos de auth/org/billing.
 **O que já dispara e-mail:**
 
 - **Verificação de e-mail** no signup (`emailVerification.sendOnSignUp`; não
-  bloqueia login — ligue `requireEmailVerification` se quiser exigir).
-- **Reset de senha** (`emailAndPassword.sendResetPassword`).
+  bloqueia login — ligue `requireEmailVerification` se quiser exigir). O
+  `callbackURL` é reescrito para o app (`APP_URL/dashboard`) após verificar.
+- **Reset de senha** (`emailAndPassword.sendResetPassword`, com
+  `revokeSessionsOnPasswordReset`). Fluxo completo no app: link "esqueci a
+  senha" no login → `/forgot-password` (pede o e-mail) → e-mail → `/reset-password`
+  (lê o `?token=` e define a nova senha). O client manda `redirectTo` absoluto.
 - **Convite de organização** (`organization.sendInvitationEmail`).
 - **Billing**: ativação e cancelamento de assinatura → e-mail ao owner da org
   (no webhook do `SubscriptionService`).

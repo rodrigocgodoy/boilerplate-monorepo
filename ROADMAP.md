@@ -67,8 +67,10 @@ Ideias priorizadas para evoluir este boilerplate de **monorepo SaaS**. Cada item
 - **Dispara hoje:** verificação de e-mail no signup, reset de senha e convite de
   organização (hooks do Better Auth) + billing (ativação/cancelamento ao owner
   da org, no webhook do `SubscriptionService`).
-- **Próximos passos:** página de reset de senha no app (+ link "esqueci a senha"
-  no login) e e-mails de billing adicionais (pagamento falhou, trial acabando).
+- **Fluxo de reset completo no app:** link "esqueci a senha" no login →
+  `/forgot-password` → e-mail → `/reset-password` (define a nova senha).
+- **Próximos passos:** e-mails de billing adicionais (pagamento falhou, trial
+  acabando).
 
 ### 3. Fundação de testes (Vitest + Playwright) 🟡 — ✅ FEITO
 

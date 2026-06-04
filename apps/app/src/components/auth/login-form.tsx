@@ -19,7 +19,7 @@ import {
 } from '@repo/ui/components/tabs'
 import { authClient } from '@repo/utils/auth-client'
 import { useQueryClient } from '@tanstack/react-query'
-import { useRouter, useSearch } from '@tanstack/react-router'
+import { Link, useRouter, useSearch } from '@tanstack/react-router'
 import { useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
@@ -165,6 +165,12 @@ export function LoginForm() {
                   ? t('actions.signingIn')
                   : t('actions.signIn')}
               </Button>
+              <Link
+                to="/forgot-password"
+                className="text-center text-muted-foreground text-sm hover:text-foreground"
+              >
+                {t('actions.forgot')}
+              </Link>
             </form>
           </TabsContent>
 
