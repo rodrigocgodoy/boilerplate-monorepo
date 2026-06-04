@@ -19,6 +19,7 @@ import { Route as AppOrganizationRouteImport } from './routes/_app/organization'
 import { Route as AppDashboardRouteImport } from './routes/_app/dashboard'
 import { Route as AppBillingRouteImport } from './routes/_app/billing'
 import { Route as AppAuditRouteImport } from './routes/_app/audit'
+import { Route as AppApiKeysRouteImport } from './routes/_app/api-keys'
 import { Route as AppAdminRouteImport } from './routes/_app/admin'
 import { Route as AppPaidRouteImport } from './routes/_app/_paid'
 import { Route as AppAdminIndexRouteImport } from './routes/_app/admin/index'
@@ -73,6 +74,11 @@ const AppAuditRoute = AppAuditRouteImport.update({
   path: '/audit',
   getParentRoute: () => AppRoute,
 } as any)
+const AppApiKeysRoute = AppApiKeysRouteImport.update({
+  id: '/api-keys',
+  path: '/api-keys',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppAdminRoute = AppAdminRouteImport.update({
   id: '/admin',
   path: '/admin',
@@ -102,6 +108,7 @@ const AppPaidPremiumRoute = AppPaidPremiumRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
   '/admin': typeof AppAdminRouteWithChildren
+  '/api-keys': typeof AppApiKeysRoute
   '/audit': typeof AppAuditRoute
   '/billing': typeof AppBillingRoute
   '/dashboard': typeof AppDashboardRoute
@@ -115,6 +122,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof AppIndexRoute
+  '/api-keys': typeof AppApiKeysRoute
   '/audit': typeof AppAuditRoute
   '/billing': typeof AppBillingRoute
   '/dashboard': typeof AppDashboardRoute
@@ -132,6 +140,7 @@ export interface FileRoutesById {
   '/_auth': typeof AuthRouteWithChildren
   '/_app/_paid': typeof AppPaidRouteWithChildren
   '/_app/admin': typeof AppAdminRouteWithChildren
+  '/_app/api-keys': typeof AppApiKeysRoute
   '/_app/audit': typeof AppAuditRoute
   '/_app/billing': typeof AppBillingRoute
   '/_app/dashboard': typeof AppDashboardRoute
@@ -149,6 +158,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/admin'
+    | '/api-keys'
     | '/audit'
     | '/billing'
     | '/dashboard'
@@ -162,6 +172,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/api-keys'
     | '/audit'
     | '/billing'
     | '/dashboard'
@@ -178,6 +189,7 @@ export interface FileRouteTypes {
     | '/_auth'
     | '/_app/_paid'
     | '/_app/admin'
+    | '/_app/api-keys'
     | '/_app/audit'
     | '/_app/billing'
     | '/_app/dashboard'
@@ -268,6 +280,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAuditRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/api-keys': {
+      id: '/_app/api-keys'
+      path: '/api-keys'
+      fullPath: '/api-keys'
+      preLoaderRoute: typeof AppApiKeysRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/admin': {
       id: '/_app/admin'
       path: '/admin'
@@ -332,6 +351,7 @@ const AppAdminRouteWithChildren = AppAdminRoute._addFileChildren(
 interface AppRouteChildren {
   AppPaidRoute: typeof AppPaidRouteWithChildren
   AppAdminRoute: typeof AppAdminRouteWithChildren
+  AppApiKeysRoute: typeof AppApiKeysRoute
   AppAuditRoute: typeof AppAuditRoute
   AppBillingRoute: typeof AppBillingRoute
   AppDashboardRoute: typeof AppDashboardRoute
@@ -344,6 +364,7 @@ interface AppRouteChildren {
 const AppRouteChildren: AppRouteChildren = {
   AppPaidRoute: AppPaidRouteWithChildren,
   AppAdminRoute: AppAdminRouteWithChildren,
+  AppApiKeysRoute: AppApiKeysRoute,
   AppAuditRoute: AppAuditRoute,
   AppBillingRoute: AppBillingRoute,
   AppDashboardRoute: AppDashboardRoute,

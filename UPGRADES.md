@@ -493,3 +493,52 @@ cancelou assinatura…). Módulo `apps/api/src/modules/audit` + model `AuditLogs
   para super-admins se precisar.
 - Em produção com Redis, dá para registrar via fila (#5) para desacoplar a
   escrita do request — hoje a escrita é direta e best-effort.
+
+---
+
+## API keys (acesso programático)
+
+Chaves de API para clientes/integrações chamarem a API, com escopo por
+**organização**. Módulo `apps/api/src/modules/api-keys`.
+
+> **Nota:** o plugin `apiKey` do Better Auth **não existe** na versão usada
+> (1.6.x) nem na 1.7-beta — por isso é um módulo próprio, no padrão dos demais.
+
+### Como funciona
+
+- **Token:** formato `bk_<segredo>`. Só o token completo dá acesso; guardamos
+  apenas o **hash SHA-256** e um **prefixo visível** (`bk_a1b2c3d4`) para lookup/
+  UI. O token é exibido **uma única vez** na criação.
+- **Model `ApiKeys`** (`api_keys`): `organizationId` (escopo), `userId` (criador),
+  `scopes` (Json — permissões; null = sem restrição além da org), `expiresAt`,
+  `lastUsedAt`, `revokedAt`. Migration `api_keys`.
+- **`ApiKeyService`:** `create` (gera/hasheia), `list`, `revoke`, `verify`
+  (lookup por prefixo → compara hash em tempo constante → checa expiração/
+  revogação → marca `lastUsedAt`).
+- **Gestão (sessão):** `GET /api-keys`, `POST /api-keys`, `DELETE /api-keys/:id`
+  (tag `ApiKeys`). Criar/revogar exige **owner/admin** da org. Integra com a
+  auditoria (#8): registra `api_key.create` / `api_key.revoke`.
+- **Acesso programático:** `requireApiKey(scope?)` (preHandler) lê
+  `Authorization: Bearer bk_…` ou `x-api-key`, valida e anexa `request.apiKey`
+  (`{ organizationId, userId, scopes }`). Exemplo: `GET /v1/ping`.
+- **Scalar/OpenAPI:** rotas com API key declaram `security: [{ Bearer: [] }]`
+  (o esquema `Bearer` já existe no Swagger) — aparecem autenticáveis no
+  `/reference`.
+- **Front:** página `/api-keys` (criar com token exibido 1x + copiar; listar;
+  revogar). Link no header do dashboard.
+
+### Proteger uma rota com API key
+
+```ts
+scope.get('/v1/things', { preHandler: requireApiKey('things:read'), schema }, h)
+// request.apiKey.organizationId escopa a query
+```
+
+### Atenção
+
+- A chave dá acesso no escopo da organização; trate o token como segredo (só o
+  hash é persistido — não há como recuperá-lo, apenas revogar e recriar).
+- `scopes` é livre por padrão; para escopos finos, valide strings de permissão
+  no `requireQuota`-style e documente o catálogo.
+- Não há rate-limit por chave embutido — combine com Redis (`UPGRADES.md` →
+  Redis) se precisar.
