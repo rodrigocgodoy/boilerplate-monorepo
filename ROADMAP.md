@@ -33,7 +33,7 @@ Ideias priorizadas para evoluir este boilerplate de **monorepo SaaS**. Cada item
 | 12 | 2FA / passkeys | 3 | 🟢 P | E-mail |
 | 13 | Notificações in-app + preferências ✅ | 3 | 🟡 M | #5 |
 | 14 | Upload de avatar/arquivos (S3) | 3 | 🟢 P | S3 |
-| 15 | Product analytics + feature flags (PostHog) | 3 | 🟢 P | — |
+| 15 | Product analytics + feature flags (PostHog) ✅ | 3 | 🟢 P | — |
 | 16 | Storybook no `packages/ui` | 3 | 🟢 P | — |
 | 17 | Dockerfile + deploy | 3 | 🟢 P | — |
 
@@ -229,10 +229,17 @@ Ideias priorizadas para evoluir este boilerplate de **monorepo SaaS**. Cada item
 - Fiar o S3/MinIO do `UPGRADES.md`: upload com URL pré-assinada, avatar no
   perfil, validação de tipo/tamanho.
 
-### 15. Product analytics + feature flags (PostHog) 🟢
+### 15. Product analytics + feature flags (PostHog) 🟢 — ✅ FEITO
 
-- PostHog cobre analytics de produto, **feature flags** genéricas (independente
-  de plano) e session replay com um pacote só.
+- **Status:** implementado (frontend). Ver `UPGRADES.md` → "PostHog".
+- **Opt-in:** sem `VITE_POSTHOG_KEY` é **no-op**. `posthog-js` inicializado em
+  `apps/app/src/analytics.ts` (`initAnalytics`); pageviews capturados a cada
+  navegação do router; `identifyUser`/`resetAnalytics` no login/logout.
+- **Feature flags:** hook `useFeatureFlag(flag)` (degrada para `false` sem
+  analytics) — demo no dashboard (badge "Beta" via flag `beta-banner`).
+- **Session replay:** liga/desliga no painel do projeto PostHog.
+- **Próximos passos:** flags no servidor (`posthog-node`) para gating de API e
+  eventos de produto em ações-chave (signup, checkout).
 
 ### 16. Storybook no `packages/ui` 🟢
 
