@@ -78,10 +78,12 @@ Ideias priorizadas para evoluir este boilerplate de **monorepo SaaS**. Cada item
 - **Status:** implementado. Ver [`TESTING.md`](./TESTING.md).
 - Vitest por package (API com `app.inject`; `@repo/ui` com jsdom), task `test`
   no Turbo (`pnpm test`) e E2E com Playwright (`pnpm test:e2e`).
-- Já cobre: guards das rotas de pagamento (503/400/401), HMAC do webhook,
-  componente de UI e smoke E2E do login.
-- **Próximos passos** (documentados no `TESTING.md`): integração com banco de
-  teste e E2E autenticado (login → checkout).
+- Já cobre: guards das rotas (503/400/401/402/403), HMAC do webhook, componente
+  de UI, smoke E2E do login e **testes de integração com Postgres** (gated por
+  `TEST_DATABASE_URL`): entitlements, audit, notifications, api-keys e export
+  LGPD — rodam no CI a cada PR.
+- **Próximos passos** (documentados no `TESTING.md`): E2E autenticado (login →
+  checkout) e cobertura (`--coverage`).
 
 ### 4. CI/CD (GitHub Actions) 🟢 — ✅ FEITO
 
