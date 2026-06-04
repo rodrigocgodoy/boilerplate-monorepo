@@ -28,7 +28,7 @@ Ideias priorizadas para evoluir este boilerplate de **monorepo SaaS**. Cada item
 | 7 | Entitlements / limites por plano ✅ | 2 | 🟡 M | Assinaturas |
 | 8 | Audit log ✅ | 2 | 🟢 P | — |
 | 9 | Observabilidade (Sentry + OTel) | 2 | 🟡 M | — |
-| 10 | API keys (acesso programático) | 2 | 🟢 P | #6 |
+| 10 | API keys (acesso programático) ✅ | 2 | 🟢 P | #6 |
 | 11 | LGPD/GDPR (export + exclusão de conta) | 3 | 🟡 M | #5 |
 | 12 | 2FA / passkeys | 3 | 🟢 P | E-mail |
 | 13 | Notificações in-app + preferências | 3 | 🟡 M | #5 |
@@ -161,11 +161,23 @@ Ideias priorizadas para evoluir este boilerplate de **monorepo SaaS**. Cada item
 - **Como encaixa:** `@sentry/node` na API e `@sentry/react` no app; OTel
   instrumentando Fastify/Prisma; pino (já presente) com `requestId`.
 
-### 10. API keys (acesso programático) 🟢 🧩
+### 10. API keys (acesso programático) 🟢 — ✅ FEITO
 
-- **O quê:** chaves de API para clientes/integrações chamarem a API.
-- **Como encaixa:** plugin `apiKey` do Better Auth + scoping por org/permissão
-  (#6). Documentar no Scalar (`/reference`).
+- **Status:** implementado. Ver `UPGRADES.md` → "API keys (acesso programático)".
+- **Nota:** o plugin `apiKey` do Better Auth **não existe** na versão usada
+  (1.6.x) nem na 1.7-beta — implementado como **módulo próprio**
+  (`apps/api/src/modules/api-keys`), no padrão dos demais módulos.
+- Model `ApiKeys`: token `bk_…` mostrado **uma vez**, só hash SHA-256 + prefixo
+  guardados; escopo por **organização**, `scopes` (permissões), expiração,
+  `lastUsedAt` e revogação. Migration `api_keys`.
+- Gestão por sessão (`GET/POST/DELETE /api-keys`, restrito a owner/admin) +
+  `requireApiKey(scope?)` para acesso programático (header `Authorization:
+  Bearer bk_…` ou `x-api-key`) + endpoint de exemplo `GET /v1/ping`. Integra com
+  audit (#8: `api_key.create`/`api_key.revoke`). Documentado no Scalar via
+  `security: [{ Bearer: [] }]`.
+- Front: página `/api-keys` (criar com token exibido 1x + copiar, listar,
+  revogar). i18n pt-BR/en/es.
+- **Próximos passos:** escopos finos por recurso e rate-limit por chave.
 
 ---
 
