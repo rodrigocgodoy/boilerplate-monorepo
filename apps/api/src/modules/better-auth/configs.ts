@@ -4,6 +4,7 @@ import type { BetterAuthOptions, betterAuth } from 'better-auth'
 import { prismaAdapter } from 'better-auth/adapters/prisma'
 import { admin, emailOTP, organization } from 'better-auth/plugins'
 import { enqueue } from '@/jobs/index.js'
+import { auditAfterHook } from '@/modules/audit/auth-hook.js'
 import { env } from '@/utils/environment.js'
 
 export type Auth = ReturnType<
@@ -208,6 +209,12 @@ export function createAuthConfig(): BetterAuthOptions {
           },
         },
       },
+    },
+    // Auditoria (#8): registra as ações mutantes do plugin organization
+    // (mudou role, removeu membro, convites, times…) que o handler /auth/*
+    // processa fora dos nossos módulos. Best-effort, ver modules/audit.
+    hooks: {
+      after: auditAfterHook,
     },
     advanced: {
       database: {

@@ -26,7 +26,7 @@ Ideias priorizadas para evoluir este boilerplate de **monorepo SaaS**. Cada item
 | 5 | Jobs em background (BullMQ + Redis) ✅ | 1 | 🟡 M | Redis |
 | 6 | RBAC + painel admin ✅ | 2 | 🟡 M | #1 |
 | 7 | Entitlements / limites por plano | 2 | 🟡 M | Assinaturas |
-| 8 | Audit log | 2 | 🟢 P | — |
+| 8 | Audit log ✅ | 2 | 🟢 P | — |
 | 9 | Observabilidade (Sentry + OTel) | 2 | 🟡 M | — |
 | 10 | API keys (acesso programático) | 2 | 🟢 P | #6 |
 | 11 | LGPD/GDPR (export + exclusão de conta) | 3 | 🟡 M | #5 |
@@ -138,12 +138,17 @@ Ideias priorizadas para evoluir este boilerplate de **monorepo SaaS**. Cada item
 - **Como encaixa:** extensão do `requireActivePlan` + uma tabela de uso/medições;
   pode alimentar pricing usage-based no futuro.
 
-### 8. Audit log 🟢
+### 8. Audit log 🟢 — ✅ FEITO
 
-- **O quê:** trilha de ações sensíveis (cancelou assinatura, mudou role, removeu
-  membro, gerou API key…).
-- **Como encaixa:** model `AuditLogs` + um helper/hook no Fastify que registra
-  `{ actorId, action, target, metadata }`. Importante pra B2B/compliance.
+- **Status:** implementado. Ver `UPGRADES.md` → "Audit log (trilha de auditoria)".
+- Model `AuditLogs` + `AuditService.record` (**best-effort**, nunca quebra a
+  ação) + `requestMeta` (IP/UA). Migration `audit_logs`.
+- Duas fontes: ações dos nossos módulos (assinar/cancelar assinatura) e um hook
+  `hooks.after` do Better Auth que audita as mutações do plugin organization
+  (remover membro, mudar role, convites, times) via `AUDIT_ORG_PATHS`.
+- `GET /audit` (org-scoped) + página `/audit` no app (link no dashboard).
+- **Próximos passos:** escopo de plataforma para ações `/admin/*` (role/ban) e,
+  com Redis, registrar via fila (#5) para desacoplar a escrita do request.
 
 ### 9. Observabilidade (Sentry + OpenTelemetry) 🟡
 
