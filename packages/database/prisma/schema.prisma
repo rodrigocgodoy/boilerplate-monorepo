@@ -197,6 +197,35 @@ model Subscriptions {
   @@map("subscriptions")
 }
 
+/// Trilha de auditoria (#8): ações sensíveis (mudou role, removeu membro,
+/// cancelou assinatura…). Escopo por organização quando aplicável. Sem relação
+/// formal com Users/Organization (mesma nota dos modelos da app) — `actorId` e
+/// `organizationId` são colunas indexadas. Registro best-effort: falha ao
+/// gravar nunca quebra a ação.
+
+model AuditLogs {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  /// quem executou (id do Users)
+  actorId        String?  @db.Uuid
+  /// ação (ex.: "member.remove", "subscription.cancel")
+  action         String
+  /// organização no escopo da ação (quando aplicável)
+  organizationId String?  @db.Uuid
+  /// tipo do alvo (ex.: "member", "subscription", "team")
+  targetType     String?
+  /// id do alvo (memberId, email, subscriptionId…)
+  targetId       String?
+  /// contexto adicional (corpo da ação, status anterior/novo…)
+  metadata       Json?
+  ip             String?
+  userAgent      String?
+  createdAt      DateTime @default(now())
+
+  @@index([organizationId, createdAt])
+  @@index([actorId])
+  @@map("audit_logs")
+}
+
 // ──────────────────────────────────────────────
 // Modelos do plugin Organization do Better Auth.
 // Gerados por `pnpm auth:generate`; ajustados para o padrão @db.Uuid +
