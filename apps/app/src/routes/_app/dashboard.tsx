@@ -13,6 +13,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { createFileRoute, Link, useRouter } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { LanguageSwitcher } from '@/components/language-switcher'
+import { OrgSwitcher } from '@/components/org-switcher'
 
 export const Route = createFileRoute('/_app/dashboard')({
   component: Dashboard,
@@ -24,6 +25,7 @@ function Dashboard() {
     'common',
     'payment',
     'subscription',
+    'organization',
   ])
   const router = useRouter()
   const queryClient = useQueryClient()
@@ -41,6 +43,10 @@ function Dashboard() {
       <header className="flex items-center justify-between gap-3">
         <h1 className="font-semibold text-2xl">{t('title')}</h1>
         <div className="flex items-center gap-2">
+          <OrgSwitcher />
+          <Button asChild variant="outline" size="sm">
+            <Link to="/organization">{t('organization:members')}</Link>
+          </Button>
           <Button asChild variant="outline" size="sm">
             <Link to="/subscription">{t('subscription:title')}</Link>
           </Button>

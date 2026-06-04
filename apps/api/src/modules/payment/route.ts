@@ -1,4 +1,4 @@
-import { getAuthenticatedUserId } from '@/utils/auth.js'
+import { getAuthenticatedUserId, getAuthSession } from '@/utils/auth.js'
 import { tp } from '@/utils/fastify.js'
 import type { AppTFunction } from '@/utils/i18n.js'
 import {
@@ -169,7 +169,7 @@ export const paymentRoute = tp(async scope => {
     {
       schema: {
         tags: ['Payment'],
-        summary: 'Histórico de pagamentos do usuário',
+        summary: 'Histórico de pagamentos (usuário + organização ativa)',
         response: {
           200: paymentListResponseSchema,
           401: paymentErrorSchema,
@@ -177,13 +177,16 @@ export const paymentRoute = tp(async scope => {
       },
     },
     async (request, reply) => {
-      const userId = await getAuthenticatedUserId(scope, request)
-      if (!userId) {
+      const session = await getAuthSession(scope, request)
+      if (!session) {
         return reply
           .status(401)
           .send({ error: request.t('payment:unauthorized') })
       }
-      const payments = await payment.listForUser(userId)
+      const payments = await payment.listForUserAndOrg(
+        session.userId,
+        session.activeOrganizationId,
+      )
       return reply.status(200).send({
         payments: payments.map(p => ({
           id: p.id,

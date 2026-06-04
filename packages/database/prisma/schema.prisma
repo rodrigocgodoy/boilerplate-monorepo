@@ -1,3 +1,4 @@
+
 generator client {
   provider = "prisma-client-js"
   output   = "../generated/client"
@@ -26,6 +27,10 @@ model Users {
   updatedAt     DateTime   @updatedAt
   sessions      Sessions[]
   accounts      Accounts[]
+  // Back-relations dos models de organização (Better Auth)
+  teammembers   TeamMember[]
+  members       Member[]
+  invitations   Invitation[]
 
   @@map("users")
 }
@@ -40,6 +45,9 @@ model Sessions {
   userAgent String?
   userId    String   @db.Uuid
   users     Users    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  activeOrganizationId String? @db.Uuid
+  activeTeamId         String? @db.Uuid
 
   @@index([userId])
   @@map("sessions")
@@ -74,6 +82,7 @@ model Verifications {
   updatedAt  DateTime @updatedAt
 
   @@map("verifications")
+  @@index([identifier])
 }
 
 // ──────────────────────────────────────────────
@@ -122,6 +131,7 @@ model Payments {
 /// Catálogo de planos. Cada plano mapeia para um PRODUTO no AbacatePay criado
 /// com um `cycle` (a recorrência nativa v2 cobra a partir do produto). Guarde o
 /// id do produto (`prod_...`) em `externalProductId`.
+
 model Plans {
   id                String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   /// identificador estável usado no código/URL (ex.: "pro-monthly")
@@ -151,6 +161,7 @@ model Plans {
 /// Assinatura de um dono (hoje sempre USER; `ownerType` deixa pronto para
 /// ORGANIZATION quando o plugin organization for habilitado). O estado é
 /// dirigido pelos webhooks do AbacatePay (subscription.*).
+
 model Subscriptions {
   id                 String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   /// dono da assinatura (id do Users hoje; sem relação formal — ver nota acima)
@@ -176,4 +187,84 @@ model Subscriptions {
   @@index([ownerId, ownerType])
   @@index([status])
   @@map("subscriptions")
+}
+
+// ──────────────────────────────────────────────
+// Modelos do plugin Organization do Better Auth.
+// Gerados por `pnpm auth:generate`; ajustados para o padrão @db.Uuid +
+// gen_random_uuid() do projeto (generateId: false → o banco gera o id).
+// Ao rodar auth:generate de novo, reaplique @db.Uuid nos ids/FKs.
+// ──────────────────────────────────────────────
+
+model Organization {
+  id          String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String
+  slug        String
+  logo        String?
+  createdAt   DateTime     @default(now())
+  metadata    String?
+  teams       Team[]
+  members     Member[]
+  invitations Invitation[]
+
+  @@unique([slug])
+  @@map("organization")
+}
+
+model Team {
+  id             String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name           String
+  organizationId String       @db.Uuid
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime?    @updatedAt
+  teammembers    TeamMember[]
+
+  @@index([organizationId])
+  @@map("team")
+}
+
+model TeamMember {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  teamId    String    @db.Uuid
+  team      Team      @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  userId    String    @db.Uuid
+  users     Users     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime? @default(now())
+
+  @@index([teamId])
+  @@index([userId])
+  @@map("teamMember")
+}
+
+model Member {
+  id             String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organizationId String       @db.Uuid
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  userId         String       @db.Uuid
+  users          Users        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role           String       @default("member")
+  createdAt      DateTime     @default(now())
+
+  @@index([organizationId])
+  @@index([userId])
+  @@map("member")
+}
+
+model Invitation {
+  id             String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organizationId String       @db.Uuid
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  email          String
+  role           String?
+  teamId         String?      @db.Uuid
+  status         String       @default("pending")
+  expiresAt      DateTime
+  createdAt      DateTime     @default(now())
+  inviterId      String       @db.Uuid
+  users          Users        @relation(fields: [inviterId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([email])
+  @@map("invitation")
 }
