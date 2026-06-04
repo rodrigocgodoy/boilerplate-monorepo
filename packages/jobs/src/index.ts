@@ -97,23 +97,36 @@ export function createJobRunner<H extends JobHandlers>(
   }
 
   // ── Modo fila (BullMQ + Redis) ────────────────────────────────────────────
+  // `url` fixa o narrowing de `redisUrl` (string) para uso dentro das closures.
   // Conexões separadas para fila e worker (recomendação do BullMQ); o worker
-  // exige `maxRetriesPerRequest: null` na conexão de bloqueio.
-  const queueConnection = new Redis(redisUrl, { maxRetriesPerRequest: null })
-  const queue = new Queue(queueName, {
-    connection: queueConnection,
-    defaultJobOptions: config.defaultJobOptions ?? DEFAULT_JOB_OPTIONS,
-  })
+  // exige `maxRetriesPerRequest: null` na conexão de bloqueio. A conexão da fila
+  // é lazy: só abre no primeiro enqueue/start, para que apenas importar o runner
+  // (ex.: CLIs como auth:generate, via configs.ts) não conecte no Redis.
+  const url = redisUrl
+  let queue: Queue | undefined
+  let queueConnection: Redis | undefined
   let worker: Worker | undefined
   let workerConnection: Redis | undefined
+
+  function getQueue(): Queue {
+    if (!queue) {
+      queueConnection = new Redis(url, { maxRetriesPerRequest: null })
+      queue = new Queue(queueName, {
+        connection: queueConnection,
+        defaultJobOptions: config.defaultJobOptions ?? DEFAULT_JOB_OPTIONS,
+      })
+    }
+    return queue
+  }
 
   return {
     enabled: true,
     async enqueue(job, data, opts) {
-      await queue.add(job, data, opts)
+      await getQueue().add(job, data, opts)
     },
     async start(logger = noopLogger) {
-      workerConnection = new Redis(redisUrl, { maxRetriesPerRequest: null })
+      const q = getQueue()
+      workerConnection = new Redis(url, { maxRetriesPerRequest: null })
       worker = new Worker(
         queueName,
         async job => {
@@ -128,7 +141,7 @@ export function createJobRunner<H extends JobHandlers>(
       )
       // Jobs agendados (idempotente — mesmo schedulerId só atualiza o padrão).
       for (const s of schedules) {
-        await queue.upsertJobScheduler(
+        await q.upsertJobScheduler(
           `sched:${String(s.job)}`,
           { pattern: s.pattern },
           { name: String(s.job), data: s.data },
@@ -140,8 +153,8 @@ export function createJobRunner<H extends JobHandlers>(
     },
     async stop() {
       await worker?.close()
-      await queue.close()
-      await queueConnection.quit()
+      await queue?.close()
+      await queueConnection?.quit()
       await workerConnection?.quit()
     },
   }

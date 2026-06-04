@@ -1,13 +1,9 @@
 import { prisma } from '@repo/database'
-import {
-  sendOrganizationInvitationEmail,
-  sendPasswordResetEmail,
-  sendVerificationEmail,
-} from '@repo/emails'
 import { ac, roles } from '@repo/utils/permissions'
 import type { BetterAuthOptions, betterAuth } from 'better-auth'
 import { prismaAdapter } from 'better-auth/adapters/prisma'
 import { emailOTP, organization } from 'better-auth/plugins'
+import { enqueue } from '@/jobs/index.js'
 import { env } from '@/utils/environment.js'
 
 export type Auth = ReturnType<
@@ -58,7 +54,8 @@ export function createAuthConfig(): BetterAuthOptions {
             `/accept-invitation/${data.invitation.id}`,
             env.APP_URL,
           ).toString()
-          await sendOrganizationInvitationEmail({
+          await enqueue('email', {
+            template: 'invitation',
             to: data.email,
             organizationName: data.organization.name,
             inviterName: data.inviter.user.name,
@@ -73,7 +70,7 @@ export function createAuthConfig(): BetterAuthOptions {
         // otpLength: 6, expiresIn: 300, allowedAttempts: 3 (defaults)
         sendVerificationOTP: async ({ email, otp, type }) => {
           if (type === 'forget-password') {
-            await sendPasswordResetEmail({ to: email, otp })
+            await enqueue('email', { template: 'reset', to: email, otp })
           }
         },
       }),
@@ -98,7 +95,8 @@ export function createAuthConfig(): BetterAuthOptions {
           'callbackURL',
           new URL('/dashboard', env.APP_URL).toString(),
         )
-        await sendVerificationEmail({
+        await enqueue('email', {
+          template: 'verification',
           to: user.email,
           name: user.name,
           url: verifyUrl.toString(),
