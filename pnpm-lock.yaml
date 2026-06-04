@@ -303,6 +303,12 @@ importers:
       '@react-email/components':
         specifier: ^1.0.12
         version: 1.0.12(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
+      '@repo/i18n':
+        specifier: workspace:*
+        version: link:../i18n
+      i18next:
+        specifier: ^24.2.0
+        version: 24.2.3(typescript@5.5.4)
       react:
         specifier: ^19.2.6
         version: 19.2.6

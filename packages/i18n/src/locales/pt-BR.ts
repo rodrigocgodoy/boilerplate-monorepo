@@ -425,4 +425,39 @@ export const ptBR = {
       tooLarge: 'Imagem muito grande (máx. 2 MB).',
     },
   },
+  email: {
+    verification: {
+      subject: 'Confirme seu e-mail',
+      heading: 'Confirme seu e-mail',
+      body: 'Olá{{name}}, confirme seu endereço de e-mail para ativar a sua conta.',
+      cta: 'Confirmar e-mail',
+      ignore: 'Se você não criou esta conta, ignore este e-mail.',
+    },
+    reset: {
+      subject: 'Redefinir sua senha',
+      heading: 'Redefinir senha',
+      body: 'Olá{{name}}, use o código abaixo para criar uma nova senha. Ele expira em 5 minutos.',
+      ignore:
+        'Se você não solicitou, ignore este e-mail — sua senha continua a mesma.',
+    },
+    invitation: {
+      subject: 'Convite para {{org}}',
+      heading: 'Você foi convidado',
+      body: '{{inviter}} convidou você para participar de {{org}}.',
+      bodyNoInviter: 'Você foi convidado para participar de {{org}}.',
+      cta: 'Aceitar convite',
+      ignore: 'Se você não esperava este convite, pode ignorar este e-mail.',
+    },
+    subscription: {
+      subjectActive: 'Assinatura ativa',
+      subjectCancelled: 'Assinatura cancelada',
+      headingActive: 'Assinatura ativa 🎉',
+      headingCancelled: 'Assinatura cancelada',
+      bodyActive: 'O plano {{plan}} de {{org}} está ativo. Obrigado!',
+      bodyCancelled: 'A assinatura do plano {{plan}} de {{org}} foi cancelada.',
+    },
+    notification: {
+      cta: 'Ver detalhes',
+    },
+  },
 } as const

@@ -5,6 +5,7 @@ import OrganizationInvitationEmail from './emails/organization-invitation.js'
 import ResetPasswordEmail from './emails/reset-password.js'
 import SubscriptionEmail from './emails/subscription.js'
 import VerificationEmail from './emails/verification.js'
+import { emailT } from './i18n.js'
 
 const apiKey = process.env.RESEND_API_KEY
 const from = process.env.EMAIL_FROM || 'Boilerplate <onboarding@resend.dev>'
@@ -12,6 +13,10 @@ const resend = apiKey ? new Resend(apiKey) : null
 
 /** `true` quando o Resend está configurado (RESEND_API_KEY presente). */
 export const emailEnabled = Boolean(apiKey)
+
+// Helper de i18n dos e-mails (namespace `email`) — útil para localizar assuntos
+// ou textos fora dos templates.
+export { emailT } from './i18n.js'
 
 async function deliver(
   to: string,
@@ -36,11 +41,12 @@ export function sendVerificationEmail(p: {
   to: string
   name?: string
   url: string
+  locale?: string
 }) {
   return deliver(
     p.to,
-    'Confirme seu e-mail',
-    <VerificationEmail name={p.name} url={p.url} />,
+    emailT(p.locale)('verification.subject'),
+    <VerificationEmail name={p.name} url={p.url} locale={p.locale} />,
     p.url,
   )
 }
@@ -49,11 +55,12 @@ export function sendPasswordResetEmail(p: {
   to: string
   name?: string
   otp: string
+  locale?: string
 }) {
   return deliver(
     p.to,
-    'Redefinir sua senha',
-    <ResetPasswordEmail name={p.name} otp={p.otp} />,
+    emailT(p.locale)('reset.subject'),
+    <ResetPasswordEmail name={p.name} otp={p.otp} locale={p.locale} />,
     `código: ${p.otp}`,
   )
 }
@@ -63,14 +70,16 @@ export function sendOrganizationInvitationEmail(p: {
   organizationName: string
   inviterName?: string
   url: string
+  locale?: string
 }) {
   return deliver(
     p.to,
-    `Convite para ${p.organizationName}`,
+    emailT(p.locale)('invitation.subject', { org: p.organizationName }),
     <OrganizationInvitationEmail
       inviterName={p.inviterName}
       organizationName={p.organizationName}
       url={p.url}
+      locale={p.locale}
     />,
     p.url,
   )
@@ -81,11 +90,17 @@ export function sendNotificationEmail(p: {
   title: string
   body?: string
   url?: string
+  locale?: string
 }) {
   return deliver(
     p.to,
     p.title,
-    <NotificationEmail title={p.title} body={p.body} url={p.url} />,
+    <NotificationEmail
+      title={p.title}
+      body={p.body}
+      url={p.url}
+      locale={p.locale}
+    />,
     p.url,
   )
 }
@@ -95,14 +110,19 @@ export function sendSubscriptionEmail(p: {
   organizationName: string
   planName: string
   status: 'active' | 'cancelled'
+  locale?: string
 }) {
+  const t = emailT(p.locale)
   return deliver(
     p.to,
-    p.status === 'active' ? 'Assinatura ativa' : 'Assinatura cancelada',
+    p.status === 'active'
+      ? t('subscription.subjectActive')
+      : t('subscription.subjectCancelled'),
     <SubscriptionEmail
       organizationName={p.organizationName}
       planName={p.planName}
       status={p.status}
+      locale={p.locale}
     />,
   )
 }
