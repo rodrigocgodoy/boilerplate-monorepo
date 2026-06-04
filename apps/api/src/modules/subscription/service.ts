@@ -1,4 +1,5 @@
 import { type Plans, prisma, type Subscriptions } from '@repo/database'
+import { sendSubscriptionEmail } from '@repo/emails'
 import { PaymentError } from '@/modules/payment/client.js'
 import { env } from '@/utils/environment.js'
 import { cancelSubscription, createSubscription } from './abacatepay-v2.js'
@@ -192,6 +193,30 @@ export class SubscriptionService {
         },
         update: { status: 'PAID' },
       })
+    }
+
+    // E-mail de billing ao owner da organização (best-effort): ativação e
+    // cancelamento. `renewed` não dispara e-mail para não notificar a cada ciclo.
+    if (
+      local.ownerType === 'ORGANIZATION' &&
+      (event === 'subscription.completed' || event === 'subscription.cancelled')
+    ) {
+      const ownerMember = await prisma.member.findFirst({
+        where: { organizationId: local.ownerId, role: 'owner' },
+        include: { users: { select: { email: true } } },
+      })
+      const org = await prisma.organization.findUnique({
+        where: { id: local.ownerId },
+        select: { name: true },
+      })
+      if (ownerMember?.users.email && org) {
+        await sendSubscriptionEmail({
+          to: ownerMember.users.email,
+          organizationName: org.name,
+          planName: local.plan.name,
+          status: event === 'subscription.cancelled' ? 'cancelled' : 'active',
+        })
+      }
     }
   }
 }

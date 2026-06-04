@@ -145,10 +145,30 @@ export class PaymentService {
     return payment
   }
 
-  /** Histórico de cobranças do usuário (mais recentes primeiro). */
-  listForUser(userId: string): Promise<Payments[]> {
+  /**
+   * Histórico de cobranças: as avulsas do usuário (PIX/checkout, por `userId`)
+   * + as recorrentes da organização ativa (via assinatura). Mais recentes
+   * primeiro.
+   */
+  listForUserAndOrg(
+    userId: string,
+    organizationId: string | null,
+  ): Promise<Payments[]> {
+    const where = organizationId
+      ? {
+          OR: [
+            { userId },
+            {
+              subscription: {
+                ownerId: organizationId,
+                ownerType: 'ORGANIZATION',
+              },
+            },
+          ],
+        }
+      : { userId }
     return prisma.payments.findMany({
-      where: { userId },
+      where,
       orderBy: { createdAt: 'desc' },
       take: 100,
     })

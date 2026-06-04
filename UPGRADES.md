@@ -71,18 +71,41 @@ O botão "Continuar com Google" já existe no app; só falta as credenciais.
 
 ---
 
-## Email transacional (Resend)
+## E-mail transacional (Resend + React Email)
 
-Para verificação de email, reset de senha e notificações.
+Já vem implementado no pacote **`@repo/emails`** (templates React Email +
+helper de envio via Resend) e fiado nos fluxos de auth/org/billing.
 
-1. ```bash
-   pnpm --filter @repo/api add resend
-   ```
-2. **.env** — adicione `RESEND_API_KEY=...`.
-3. **environment.ts** — adicione `RESEND_API_KEY: z.string()`.
-4. **better-auth/configs.ts** — use os hooks de email do Better Auth
-   (`emailAndPassword.sendResetPassword`, `emailVerification.sendVerificationEmail`).
-   Veja a skill `.claude/skills/email-and-password-best-practices`.
+**Ativar (produção):**
+
+1. **.env** — preencha `RESEND_API_KEY` e `EMAIL_FROM` (use um remetente de
+   **domínio verificado** no Resend).
+2. Pronto. Sem a key, os e-mails são **logados no console** (dev) em vez de
+   enviados — `@repo/emails` cai nesse fallback automaticamente.
+
+**O que já dispara e-mail:**
+
+- **Verificação de e-mail** no signup (`emailVerification.sendOnSignUp`; não
+  bloqueia login — ligue `requireEmailVerification` se quiser exigir). O
+  `callbackURL` é reescrito para o app (`APP_URL/dashboard`) após verificar.
+- **Reset de senha por código (OTP)** — plugin `emailOTP` (server) +
+  `emailOTPClient` (client), em vez de link (mais portável p/ app mobile, sem
+  deep link). Fluxo no app: "esqueci a senha" no login → `/forgot-password`
+  (passo 1: e-mail → `emailOtp.requestPasswordReset`; passo 2: código + nova
+  senha → `emailOtp.resetPassword`). Código de 6 dígitos, expira em 5 min, 3
+  tentativas (defaults). `revokeSessionsOnPasswordReset` ligado. Não há migration
+  (o OTP usa a tabela `verifications` já existente).
+- **Convite de organização** (`organization.sendInvitationEmail`).
+- **Billing**: ativação e cancelamento de assinatura → e-mail ao owner da org
+  (no webhook do `SubscriptionService`).
+
+**Templates e preview:**
+
+- Templates em `packages/emails/src/emails/*.tsx` (verificação, reset,
+  convite, assinatura) + casca compartilhada `_layout.tsx`.
+- Preview visual: `pnpm email:dev` (servidor do React Email).
+- Para um novo e-mail: crie o template e exporte um sender em
+  `packages/emails/src/index.tsx`.
 
 ---
 
@@ -254,3 +277,46 @@ echo '{"required_status_checks":{"strict":true,"contexts":["CHECK"]},"enforce_ad
 `enforce_admins: true` aplica a regra também a admins (sem isso, admin mergeia
 mesmo com check vermelho). Adicionou/renomeou jobs depois? Não precisa mexer na
 regra — ela exige só o `CHECK`, que agrega todos os jobs.
+
+---
+
+## Organizations / multi-tenancy
+
+Multi-tenancy via plugin `organization` do Better Auth (com **teams**). O dono
+dos recursos de billing passa a ser a **organização ativa** da sessão.
+
+### Como funciona
+
+- **Server:** plugin `organization({ teams })` em `better-auth/configs.ts`.
+  **Client:** `organizationClient({ teams })` em `packages/utils/auth-client.ts`.
+- **Models:** Organization, Member, Invitation, Team, TeamMember (ajustados ao
+  padrão `@db.Uuid` do projeto). A sessão ganha `activeOrganizationId`.
+- **Org ativa:** `getAuthSession()` (em `apps/api/src/utils/auth.ts`) expõe o
+  `activeOrganizationId`. Endpoints de org são servidos pelo Better Auth em
+  `/auth/organization/*` e consumidos no front via `authClient.organization.*`.
+- **Billing por organização:** `subscribe`, `getActive`, `requireActivePlan` e o
+  histórico de pagamentos operam sobre `ownerType=ORGANIZATION` + a org ativa.
+  Sem org ativa, `POST /subscription` responde **400** (`noActiveOrg`).
+- **Auto-criação:** `databaseHooks.user.create.after` cria uma org pessoal
+  (owner) no signup; `session.create.before` define a org ativa no login. O
+  layout `_app` ainda ativa a primeira org se nenhuma estiver ativa (cobre o
+  race da sessão inicial do signup).
+- **Frontend:** `OrgSwitcher` (trocar/criar org) no header; página
+  `/organization` (membros + convites + **times**); rota `/accept-invitation/$id`.
+
+### Convites
+
+`sendInvitationEmail` envia o e-mail de convite via `@repo/emails` (com o link
+`{APP_URL}/accept-invitation/{id}`). Sem `RESEND_API_KEY`, o link é logado no
+console (dev) — a UI também mostra "copiar link" como alternativa. O convidado
+precisa estar logado (mesmo e-mail) para aceitar.
+
+### Atenção
+
+- Endpoints mutantes do Better Auth exigem header `Origin` em `trustedOrigins`
+  (CSRF) — o browser manda automático; testes via curl precisam de `-H Origin`.
+- Ao rodar `pnpm auth:generate` de novo, o CLI reintroduz relações duplicadas
+  (`sessionss`/`accountss`) e remove o `@db.Uuid` dos models de org — limpe o
+  diff (mantenha só as back-relations novas e reaplique `@db.Uuid`).
+- Roles: `owner`/`admin`/`member` (permissões checadas no server). Para roles
+  customizadas/teams avançados, veja a skill `organization-best-practices`.
