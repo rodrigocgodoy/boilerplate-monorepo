@@ -68,6 +68,13 @@ const envSchema = z.object({
     .string()
     .default('true')
     .transform(v => ['true', '1', 'yes', 'on'].includes(v.toLowerCase())),
+  // Observabilidade (Sentry) — opcional. Vazio = desligado (no-op): nada é
+  // enviado. Preencha o DSN para capturar erros e traces. Ver UPGRADES.md.
+  SENTRY_DSN: z.string().default(''),
+  // Ambiente reportado ao Sentry; vazio = usa ENV.
+  SENTRY_ENVIRONMENT: z.string().default(''),
+  // Amostragem de traces (0..1). 0 = sem performance/tracing (só erros).
+  SENTRY_TRACES_SAMPLE_RATE: z.coerce.number().min(0).max(1).default(0),
 })
 
 const _env = envSchema.safeParse(process.env)

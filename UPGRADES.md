@@ -496,6 +496,51 @@ cancelou assinatura…). Módulo `apps/api/src/modules/audit` + model `AuditLogs
 
 ---
 
+## Observabilidade (Sentry)
+
+Captura de erros + traces distribuídos (API e app) e logs com `requestId`.
+Segue a filosofia do boilerplate: **funciona sem infra** — sem DSN é no-op.
+
+**Ativar:**
+
+1. Crie projetos no [Sentry](https://sentry.io) (um para Node/API, um para o
+   browser/app) e copie os DSNs.
+2. **.env** — preencha `SENTRY_DSN` (API) e `VITE_SENTRY_DSN` (app). Opcional:
+   `SENTRY_TRACES_SAMPLE_RATE` / `VITE_SENTRY_TRACES_SAMPLE_RATE` (0..1, default
+   0 = só erros) e `*_ENVIRONMENT`.
+3. Pronto. Sem DSN, nada é inicializado nem enviado.
+
+**Como funciona:**
+
+- **API (`@sentry/node`, v10):** o SDK é **baseado em OpenTelemetry** e
+  **auto-instrumenta Fastify, Prisma e HTTP** — cobre os "traces distribuídos"
+  sem um SDK OTel separado. O init fica em `apps/api/src/instrument.ts`
+  (importado como **1º import** de `index.ts`/`worker.ts` e, em produção, via
+  `node --import ./dist/instrument.js`, já nos scripts `start`). A captura de
+  erros é ligada com `Sentry.setupFastifyErrorHandler(app)` (hook `onError` — não
+  altera o formato das respostas).
+- **`requestId`:** o Fastify gera/honra `x-request-id` (`genReqId` +
+  `requestIdHeader`); aparece em **todo log** da request (`reqId`) e como header
+  `x-request-id` na resposta — correlaciona logs ↔ Sentry ↔ cliente.
+- **App (`@sentry/react`):** `initObservability()` em `main.tsx` (no-op sem
+  `VITE_SENTRY_DSN`) + `<ObservabilityBoundary>` (Sentry `ErrorBoundary` com
+  fallback) envolvendo a árvore.
+- **Logs estruturados:** pino (default do Fastify) com nível em `API_LOG_LEVEL`;
+  em dev, formatado por `pino-pretty`.
+
+**Testar:** em dev, `GET /debug/sentry` (rota só de desenvolvimento) lança um
+erro de propósito — com DSN configurado, ele aparece no Sentry.
+
+**Atenção:**
+
+- Para um backend de tracing **não-Sentry** (ex.: Grafana Tempo/Jaeger via
+  OTLP), adicione um `@opentelemetry/sdk-node` + exporter — o Sentry v10 já usa
+  OTel por baixo, então dá para compor.
+- `@sentry/react` adiciona peso ao bundle; se precisar, carregue sob demanda
+  (dynamic import) quando o DSN estiver presente.
+
+---
+
 ## API keys (acesso programático)
 
 Chaves de API para clientes/integrações chamarem a API, com escopo por

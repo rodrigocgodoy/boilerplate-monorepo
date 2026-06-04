@@ -1,3 +1,7 @@
+// IMPORTANTE: 1º import — inicializa o Sentry antes dos demais módulos (ver
+// instrument.ts). Sem SENTRY_DSN é no-op.
+import './instrument.js'
+import { randomUUID } from 'node:crypto'
 import { isMainThread } from 'node:worker_threads'
 import closeWithGrace from 'close-with-grace'
 import fastify from 'fastify'
@@ -18,6 +22,11 @@ const app = fastify({
   logger: {
     level: env.API_LOG_LEVEL,
   },
+  // requestId: honra um `x-request-id` recebido (correlação entre serviços) ou
+  // gera um UUID. Aparece em todo log da request (`reqId`) e nas respostas de
+  // erro 5xx, facilitando rastrear no Sentry/logs.
+  requestIdHeader: 'x-request-id',
+  genReqId: () => randomUUID(),
 })
 
 // Delay is the number of milliseconds for the graceful close to finish
