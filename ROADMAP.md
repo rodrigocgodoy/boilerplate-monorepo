@@ -98,12 +98,14 @@ Ideias priorizadas para evoluir este boilerplate de **monorepo SaaS**. Cada item
 - Pacote **`@repo/jobs`** (infra genérica de fila com BullMQ) + handlers em
   `apps/api/src/jobs`. **Funciona sem infra**: sem `REDIS_URL`, `enqueue` roda
   inline (dev); com Redis, fila real com retries/backoff + jobs agendados (cron).
-- Já existe: job **`email`** (billing já passa por ele) e job agendado
-  **`sweep-subscriptions`** (expira assinaturas vencidas, diário às 03:00).
+- Jobs: **`email`** (todos os e-mails — verificação, reset, convite e billing —
+  passam pela fila), **`subscription-webhook`** (webhook de assinatura processado
+  fora do request, async + idempotente via `jobId`) e **`sweep-subscriptions`**
+  (agendado diário às 03:00, expira assinaturas vencidas).
 - Worker in-process por padrão (`JOBS_IN_PROCESS`); `pnpm worker` para um worker
   dedicado em produção.
-- **Próximos passos:** processar o webhook de assinatura via job (async +
-  idempotente) e mover os demais e-mails (auth) para a fila.
+- **Próximos passos:** processar o webhook de cobrança avulsa (`billing.*`) via
+  fila também e mover varreduras de trial para jobs agendados dedicados.
 
 ---
 

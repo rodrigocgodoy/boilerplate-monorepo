@@ -1,3 +1,4 @@
+import { enqueue } from '@/jobs/index.js'
 import { getAuthenticatedUserId, getAuthSession } from '@/utils/auth.js'
 import { tp } from '@/utils/fastify.js'
 import type { AppTFunction } from '@/utils/i18n.js'
@@ -230,7 +231,12 @@ export const paymentRoute = tp(async scope => {
       }
       const event = request.body.event ?? ''
       if (event.startsWith('subscription.')) {
-        await scope.services.subscription.handleWebhookEvent(request.body)
+        // Processa fora do request: com Redis vira job (retries/backoff); sem
+        // Redis roda inline (igual antes). O jobId derivado do evento dá
+        // idempotência contra reentregas do webhook.
+        await enqueue('subscription-webhook', request.body, {
+          jobId: webhookJobId(request.body),
+        })
       } else {
         await payment.handleBillingEvent(request.body)
       }
@@ -238,6 +244,28 @@ export const paymentRoute = tp(async scope => {
     },
   )
 })
+
+/**
+ * jobId estável para o webhook de assinatura → idempotência contra reentregas.
+ * Usa o id do pagamento (cada ciclo tem o seu) ou o id da assinatura. Sem id ou
+ * evento, retorna undefined (o BullMQ gera um id e não deduplica).
+ */
+function webhookJobId(body: {
+  event?: string
+  data?: Record<string, unknown>
+}): string | undefined {
+  const data = body.data ?? {}
+  const sub = (data.subscription ?? {}) as Record<string, unknown>
+  const payment = (data.payment ?? {}) as Record<string, unknown>
+  const id =
+    (typeof payment.id === 'string' && payment.id) ||
+    (typeof sub.externalId === 'string' && sub.externalId) ||
+    (typeof sub.id === 'string' && sub.id) ||
+    ''
+  if (!body.event || !id) return undefined
+  // Sanitiza (evita ':', que o BullMQ usa nas chaves internas).
+  return `wh_${body.event}_${id}`.replace(/[^a-zA-Z0-9_-]/g, '-')
+}
 
 /** Mapeia um erro de pagamento para `{ status, body }` a ser enviado. */
 function paymentErrorReply(

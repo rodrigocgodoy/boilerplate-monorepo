@@ -56,9 +56,14 @@ sem infra**.
 
 **O que já existe:**
 
-- Job **`email`** — despacha qualquer e-mail (verificação, reset, convite,
-  billing) via `@repo/emails`. O e-mail de billing já passa por ele
-  (`enqueue('email', { template: 'subscription', … })`).
+- Job **`email`** — despacha **todos** os e-mails (verificação, reset, convite,
+  billing) via `@repo/emails`. Os hooks do Better Auth e o billing chamam
+  `enqueue('email', { template, … })` — com Redis, todo envio ganha retries.
+- Job **`subscription-webhook`** — a rota `POST /payments/webhook` valida o HMAC
+  e enfileira os eventos `subscription.*`; o processamento (atualizar status,
+  histórico, e-mail) roda no worker, **async + idempotente** (o `jobId` deriva do
+  evento/pagamento, dedup contra reentregas do webhook). Sem Redis, roda inline
+  (igual antes).
 - Job agendado **`sweep-subscriptions`** — todo dia às 03:00, expira assinaturas
   com `currentPeriodEnd` vencido (não depende só do webhook).
 
