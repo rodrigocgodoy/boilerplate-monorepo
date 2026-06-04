@@ -1,4 +1,5 @@
 import type { FastifyInstance } from 'fastify'
+import { AuditService } from '@/modules/audit/service.js'
 import { BetterAuthService } from '@/modules/better-auth/service.js'
 import { EntitlementsService } from '@/modules/entitlements/service.js'
 import { PaymentService } from '@/modules/payment/service.js'
@@ -12,6 +13,7 @@ declare module 'fastify' {
       payment: PaymentService
       subscription: SubscriptionService
       entitlements: EntitlementsService
+      audit: AuditService
     }
   }
 }
@@ -28,5 +30,6 @@ export function createServices(): FastifyInstance['services'] {
     subscription,
     // Reusa a mesma instância de SubscriptionService (resolve o plano ativo).
     entitlements: new EntitlementsService(subscription),
+    audit: new AuditService(),
   }
 }
