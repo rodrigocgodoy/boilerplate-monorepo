@@ -1,5 +1,5 @@
 import { type Plans, prisma, type Subscriptions } from '@repo/database'
-import { sendSubscriptionEmail } from '@repo/emails'
+import { enqueue } from '@/jobs/index.js'
 import { PaymentError } from '@/modules/payment/client.js'
 import { env } from '@/utils/environment.js'
 import { cancelSubscription, createSubscription } from './abacatepay-v2.js'
@@ -210,7 +210,9 @@ export class SubscriptionService {
         select: { name: true },
       })
       if (ownerMember?.users.email && org) {
-        await sendSubscriptionEmail({
+        // Via fila: com Redis ganha retries/backoff; sem Redis envia inline.
+        await enqueue('email', {
+          template: 'subscription',
           to: ownerMember.users.email,
           organizationName: org.name,
           planName: local.plan.name,

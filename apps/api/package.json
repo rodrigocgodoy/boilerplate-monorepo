@@ -5,8 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "tsx --enable-source-maps --watch src/index.ts | pino-pretty",
+    "worker": "tsx --enable-source-maps --watch src/worker.ts | pino-pretty",
     "build": "tsc && tsc-alias",
     "start": "node dist/index.js",
+    "start:worker": "node dist/worker.js",
     "test": "vitest run",
     "test:watch": "vitest",
     "auth:generate": "npx @better-auth/cli generate --config ./src/utils/auth.ts --output ../../packages/database/prisma/schema.prisma --yes"
@@ -21,6 +23,7 @@
     "@repo/database": "workspace:*",
     "@repo/emails": "workspace:*",
     "@repo/i18n": "workspace:*",
+    "@repo/jobs": "workspace:*",
     "@repo/utils": "workspace:*",
     "@scalar/fastify-api-reference": "^1.43.17",
     "abacatepay-nodejs-sdk": "^1.6.0",

@@ -23,7 +23,7 @@ Ideias priorizadas para evoluir este boilerplate de **monorepo SaaS**. Cada item
 | 2 | E-mail transacional (Resend + React Email) ✅ | 1 | 🟡 M | — |
 | 3 | Fundação de testes (Vitest + Playwright) | 1 | 🟡 M | — |
 | 4 | CI/CD (GitHub Actions) | 1 | 🟢 P | #3 |
-| 5 | Jobs em background (BullMQ + Redis) | 1 | 🟡 M | Redis |
+| 5 | Jobs em background (BullMQ + Redis) ✅ | 1 | 🟡 M | Redis |
 | 6 | RBAC + painel admin | 2 | 🟡 M | #1 |
 | 7 | Entitlements / limites por plano | 2 | 🟡 M | Assinaturas |
 | 8 | Audit log | 2 | 🟢 P | — |
@@ -92,13 +92,18 @@ Ideias priorizadas para evoluir este boilerplate de **monorepo SaaS**. Cada item
 - Dispara em push na `main` e em PRs; badge no README.
 - **Próximos passos:** `--affected` do Turbo (rodar só o que mudou) e remote cache.
 
-### 5. Jobs em background (BullMQ + Redis) 🟡
+### 5. Jobs em background (BullMQ + Redis) 🟡 — ✅ FEITO
 
-- **O quê:** fila para trabalho assíncrono e agendado.
-- **Por quê:** webhooks devem ser processados async/idempotente; e-mails, varrer
-  trials/renovações vencidas, retries com backoff.
-- **Como encaixa:** `bullmq` + Redis (já no `UPGRADES.md`); um `packages/jobs`
-  com workers e um agendador (repeatable jobs) para tarefas periódicas.
+- **Status:** implementado. Ver `UPGRADES.md` → "Jobs em background (BullMQ + Redis)".
+- Pacote **`@repo/jobs`** (infra genérica de fila com BullMQ) + handlers em
+  `apps/api/src/jobs`. **Funciona sem infra**: sem `REDIS_URL`, `enqueue` roda
+  inline (dev); com Redis, fila real com retries/backoff + jobs agendados (cron).
+- Já existe: job **`email`** (billing já passa por ele) e job agendado
+  **`sweep-subscriptions`** (expira assinaturas vencidas, diário às 03:00).
+- Worker in-process por padrão (`JOBS_IN_PROCESS`); `pnpm worker` para um worker
+  dedicado em produção.
+- **Próximos passos:** processar o webhook de assinatura via job (async +
+  idempotente) e mover os demais e-mails (auth) para a fila.
 
 ---
 
