@@ -351,4 +351,33 @@ export const ptBR = {
     never: 'Nunca',
     neverUsed: 'Nunca usada',
   },
+  account: {
+    nav: 'Conta',
+    title: 'Conta',
+    description: 'Gerencie seus dados e sua conta.',
+    back: 'Voltar',
+    export: {
+      title: 'Exportar meus dados',
+      description:
+        'Baixe um JSON com seus dados pessoais (perfil, sessões, organizações, chaves e trilha de auditoria). LGPD/GDPR.',
+      action: 'Exportar (JSON)',
+      exporting: 'Exportando...',
+      failed: 'Falha ao exportar os dados.',
+    },
+    delete: {
+      title: 'Excluir conta',
+      description:
+        'Remove sua conta e revoga o acesso. Esta ação é permanente e não pode ser desfeita.',
+      action: 'Excluir minha conta',
+      confirmTitle: 'Confirmar exclusão',
+      confirmDescription:
+        'Digite sua senha para confirmar. Sua conta será excluída imediatamente.',
+      password: 'Senha',
+      cancel: 'Cancelar',
+      confirm: 'Excluir definitivamente',
+      deleting: 'Excluindo...',
+      done: 'Conta excluída.',
+      failed: 'Não foi possível excluir a conta.',
+    },
+  },
 } as const

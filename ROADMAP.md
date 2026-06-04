@@ -29,7 +29,7 @@ Ideias priorizadas para evoluir este boilerplate de **monorepo SaaS**. Cada item
 | 8 | Audit log ✅ | 2 | 🟢 P | — |
 | 9 | Observabilidade (Sentry + OTel) ✅ | 2 | 🟡 M | — |
 | 10 | API keys (acesso programático) ✅ | 2 | 🟢 P | #6 |
-| 11 | LGPD/GDPR (export + exclusão de conta) | 3 | 🟡 M | #5 |
+| 11 | LGPD/GDPR (export + exclusão de conta) ✅ | 3 | 🟡 M | #5 |
 | 12 | 2FA / passkeys | 3 | 🟢 P | E-mail |
 | 13 | Notificações in-app + preferências | 3 | 🟡 M | #5 |
 | 14 | Upload de avatar/arquivos (S3) | 3 | 🟢 P | S3 |
@@ -191,10 +191,19 @@ Ideias priorizadas para evoluir este boilerplate de **monorepo SaaS**. Cada item
 
 ## 🥉 Tier 3 — polish / compliance / contexto Brasil
 
-### 11. LGPD/GDPR — export + exclusão de conta 🟡
+### 11. LGPD/GDPR — export + exclusão de conta 🟡 — ✅ FEITO
 
-- Export dos dados do usuário (job async, #5) e exclusão/anonimização de conta.
-  Relevante no Brasil — e o produto já lida com PIX/pagamentos.
+- **Status:** implementado. Ver `UPGRADES.md` → "LGPD/GDPR (export + exclusão)".
+- **Export:** `GET /me/export` (`MeService.exportUserData`) compila os dados
+  pessoais (perfil, contas/sessões **sanitizadas**, organizações, API keys sem
+  hash, audit logs) em JSON para download. Página `/account` baixa o arquivo.
+- **Exclusão:** `user.deleteUser` do Better Auth (reautenticação por senha);
+  `afterDelete` limpa o que não cai por cascade (apaga API keys do usuário,
+  anonimiza `actorId` dos audit logs). Member/sessions/accounts caem por FK.
+- Página `/account` (exportar + danger zone com confirmação por senha).
+- **Próximos passos:** export assíncrono via job (#5) gerando arquivo no S3
+  (#14) + link por e-mail; fluxo de exclusão por e-mail para contas OAuth (sem
+  senha).
 
 ### 12. 2FA / passkeys 🟢 🧩
 

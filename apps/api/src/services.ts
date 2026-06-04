@@ -3,6 +3,7 @@ import { ApiKeyService } from '@/modules/api-keys/service.js'
 import { AuditService } from '@/modules/audit/service.js'
 import { BetterAuthService } from '@/modules/better-auth/service.js'
 import { EntitlementsService } from '@/modules/entitlements/service.js'
+import { MeService } from '@/modules/me/service.js'
 import { PaymentService } from '@/modules/payment/service.js'
 import { SubscriptionService } from '@/modules/subscription/service.js'
 import { tp } from '@/utils/fastify.js'
@@ -16,6 +17,7 @@ declare module 'fastify' {
       entitlements: EntitlementsService
       audit: AuditService
       apiKeys: ApiKeyService
+      me: MeService
     }
   }
 }
@@ -34,5 +36,6 @@ export function createServices(): FastifyInstance['services'] {
     entitlements: new EntitlementsService(subscription),
     audit: new AuditService(),
     apiKeys: new ApiKeyService(),
+    me: new MeService(),
   }
 }

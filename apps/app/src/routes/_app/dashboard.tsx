@@ -29,6 +29,7 @@ function Dashboard() {
     'admin',
     'audit',
     'apiKeys',
+    'account',
   ])
   const router = useRouter()
   const queryClient = useQueryClient()
@@ -63,6 +64,9 @@ function Dashboard() {
           </Button>
           <Button asChild variant="outline" size="sm">
             <Link to="/api-keys">{t('apiKeys:nav')}</Link>
+          </Button>
+          <Button asChild variant="outline" size="sm">
+            <Link to="/account">{t('account:nav')}</Link>
           </Button>
           <Button asChild variant="outline" size="sm">
             <Link to="/subscription">{t('subscription:title')}</Link>
