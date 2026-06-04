@@ -1,3 +1,5 @@
+// 1º import: inicializa o Sentry (no-op sem SENTRY_DSN). Ver instrument.ts.
+import './instrument.js'
 import closeWithGrace from 'close-with-grace'
 import { jobs } from './jobs/index.js'
 import { env } from './utils/environment.js'

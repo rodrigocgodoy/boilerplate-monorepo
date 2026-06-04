@@ -8,6 +8,7 @@ import fastifySwagger from '@fastify/swagger'
 import { prisma } from '@repo/database'
 import { defaultLocale, type Locale } from '@repo/i18n'
 import fastifyScalar from '@scalar/fastify-api-reference'
+import * as Sentry from '@sentry/node'
 import {
   jsonSchemaTransform,
   serializerCompiler,
@@ -35,6 +36,13 @@ export const backendPlugin = tp(async app => {
   // Validator/serializer do Zod
   app.setValidatorCompiler(validatorCompiler)
   app.setSerializerCompiler(serializerCompiler)
+
+  // Observabilidade: o Sentry captura os erros via hook `onError` (não altera o
+  // formato das respostas). Só ativa com SENTRY_DSN — o init está em
+  // instrument.ts (importado no 1º import de index.ts). Ver UPGRADES.md.
+  if (env.SENTRY_DSN) {
+    Sentry.setupFastifyErrorHandler(app)
+  }
 
   // Mantém o parse JSON padrão, mas preserva o corpo cru em request.rawBody
   // (necessário para validar a assinatura HMAC do webhook sobre os bytes
@@ -66,6 +74,9 @@ export const backendPlugin = tp(async app => {
     request.lang = lang
     request.t = getT(lang)
     reply.header('Content-Language', lang)
+    // Expõe o requestId ao cliente (correlação com logs/Sentry). Já presente em
+    // todo log da request como `reqId`.
+    reply.header('x-request-id', String(request.id))
   })
 
   if (env.ENV === 'development') {
@@ -115,6 +126,11 @@ export const backendPlugin = tp(async app => {
     // Serve o spec
     app.get('/openapi.yaml', { schema: { hide: true } }, async () => {
       return app.swagger()
+    })
+
+    // Dev-only: dispara um erro para validar a captura no Sentry.
+    app.get('/debug/sentry', { schema: { hide: true } }, async () => {
+      throw new Error('Sentry debug error (rota de teste)')
     })
 
     // CSP específico pra rota /reference (Scalar)
