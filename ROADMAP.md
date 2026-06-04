@@ -25,7 +25,7 @@ Ideias priorizadas para evoluir este boilerplate de **monorepo SaaS**. Cada item
 | 4 | CI/CD (GitHub Actions) | 1 | 🟢 P | #3 |
 | 5 | Jobs em background (BullMQ + Redis) ✅ | 1 | 🟡 M | Redis |
 | 6 | RBAC + painel admin ✅ | 2 | 🟡 M | #1 |
-| 7 | Entitlements / limites por plano | 2 | 🟡 M | Assinaturas |
+| 7 | Entitlements / limites por plano ✅ | 2 | 🟡 M | Assinaturas |
 | 8 | Audit log | 2 | 🟢 P | — |
 | 9 | Observabilidade (Sentry + OTel) | 2 | 🟡 M | — |
 | 10 | API keys (acesso programático) | 2 | 🟢 P | #6 |
@@ -130,13 +130,18 @@ Ideias priorizadas para evoluir este boilerplate de **monorepo SaaS**. Cada item
 - **Próximos passos:** permissões finas (`ac`/`roles` do plugin) e E2E
   autenticado do painel (depende do banco de teste — ver `TESTING.md`).
 
-### 7. Entitlements / limites por plano 🟡
+### 7. Entitlements / limites por plano 🟡 — ✅ FEITO
 
-- **O quê:** transformar `plan.features` (ex.: `{ seats, projects, apiCalls }`)
-  em regras de uso: `canUseFeature(feature)` e `checkQuota(metric)` + contadores.
-- **Por quê:** é o que dá sentido prático aos planos além do gate "tem plano?".
-- **Como encaixa:** extensão do `requireActivePlan` + uma tabela de uso/medições;
-  pode alimentar pricing usage-based no futuro.
+- **Status:** implementado. Ver `UPGRADES.md` → "Entitlements / limites por plano".
+- Módulo `entitlements`: `EntitlementsService` (`getUsage`/`checkQuota`/`consume`/
+  `canUseFeature`) transforma `plan.features` em quotas por organização (fallback
+  no plano free quando sem assinatura ativa). Núcleo puro testável (`quota.ts`).
+- Métricas de **contagem viva** (`seats` → `Member`) e **medidas** (`apiCalls` →
+  tabela `usage_counters`, período mensal `YYYY-MM` com reset implícito).
+- Endpoints `GET /entitlements` e `POST /entitlements/track` (402 ao exceder) +
+  guard `requireQuota(metric)`. Front: card "Uso do plano" em `/subscription`.
+- **Próximos passos:** enforçar `seats` no convite (hook do plugin organization)
+  e amarrar o período ao ciclo de cobrança; pricing usage-based.
 
 ### 8. Audit log 🟢
 
