@@ -67,8 +67,9 @@ Ideias priorizadas para evoluir este boilerplate de **monorepo SaaS**. Cada item
 - **Dispara hoje:** verificação de e-mail no signup, reset de senha e convite de
   organização (hooks do Better Auth) + billing (ativação/cancelamento ao owner
   da org, no webhook do `SubscriptionService`).
-- **Fluxo de reset completo no app:** link "esqueci a senha" no login →
-  `/forgot-password` → e-mail → `/reset-password` (define a nova senha).
+- **Reset de senha por código (OTP)** no app: "esqueci a senha" no login →
+  `/forgot-password` (e-mail → código → nova senha). Plugin `emailOTP` do Better
+  Auth, sem link/deep link — amigável a app mobile.
 - **Próximos passos:** e-mails de billing adicionais (pagamento falhou, trial
   acabando).
 

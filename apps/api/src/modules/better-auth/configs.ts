@@ -7,7 +7,7 @@ import {
 import { ac, roles } from '@repo/utils/permissions'
 import type { BetterAuthOptions, betterAuth } from 'better-auth'
 import { prismaAdapter } from 'better-auth/adapters/prisma'
-import { organization } from 'better-auth/plugins'
+import { emailOTP, organization } from 'better-auth/plugins'
 import { env } from '@/utils/environment.js'
 
 export type Auth = ReturnType<
@@ -66,17 +66,22 @@ export function createAuthConfig(): BetterAuthOptions {
           })
         },
       }),
+      // Reset de senha por código (OTP) em vez de link — mais portável (não exige
+      // deep link em app mobile). Só usamos o tipo `forget-password`; sign-in e
+      // email-verification por OTP ficam disponíveis se quiser ligar depois.
+      emailOTP({
+        // otpLength: 6, expiresIn: 300, allowedAttempts: 3 (defaults)
+        sendVerificationOTP: async ({ email, otp, type }) => {
+          if (type === 'forget-password') {
+            await sendPasswordResetEmail({ to: email, otp })
+          }
+        },
+      }),
     ],
     emailAndPassword: {
       enabled: true,
       // Invalida as sessões existentes ao redefinir a senha (higiene de segurança).
       revokeSessionsOnPasswordReset: true,
-      // E-mail de reset (disparado sob demanda). O `url` já embute o callbackURL
-      // absoluto que o client manda em `requestPasswordReset({ redirectTo })`
-      // (a página /reset-password do app). Ver @repo/emails.
-      sendResetPassword: async ({ user, url }) => {
-        await sendPasswordResetEmail({ to: user.email, name: user.name, url })
-      },
     },
     emailVerification: {
       // Envia verificação no cadastro. NÃO bloqueia o login por padrão

@@ -88,10 +88,13 @@ helper de envio via Resend) e fiado nos fluxos de auth/org/billing.
 - **Verificação de e-mail** no signup (`emailVerification.sendOnSignUp`; não
   bloqueia login — ligue `requireEmailVerification` se quiser exigir). O
   `callbackURL` é reescrito para o app (`APP_URL/dashboard`) após verificar.
-- **Reset de senha** (`emailAndPassword.sendResetPassword`, com
-  `revokeSessionsOnPasswordReset`). Fluxo completo no app: link "esqueci a
-  senha" no login → `/forgot-password` (pede o e-mail) → e-mail → `/reset-password`
-  (lê o `?token=` e define a nova senha). O client manda `redirectTo` absoluto.
+- **Reset de senha por código (OTP)** — plugin `emailOTP` (server) +
+  `emailOTPClient` (client), em vez de link (mais portável p/ app mobile, sem
+  deep link). Fluxo no app: "esqueci a senha" no login → `/forgot-password`
+  (passo 1: e-mail → `emailOtp.requestPasswordReset`; passo 2: código + nova
+  senha → `emailOtp.resetPassword`). Código de 6 dígitos, expira em 5 min, 3
+  tentativas (defaults). `revokeSessionsOnPasswordReset` ligado. Não há migration
+  (o OTP usa a tabela `verifications` já existente).
 - **Convite de organização** (`organization.sendInvitationEmail`).
 - **Billing**: ativação e cancelamento de assinatura → e-mail ao owner da org
   (no webhook do `SubscriptionService`).
