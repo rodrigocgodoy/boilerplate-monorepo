@@ -19,6 +19,7 @@
     "db:migrate": "pnpm --filter @repo/database dev",
     "db:seed": "pnpm --filter @repo/database seed",
     "db:studio": "pnpm --filter @repo/database studio",
+    "email:dev": "pnpm --filter @repo/emails email:dev",
     "auth:generate": "pnpm --filter @repo/api auth:generate",
     "openapi": "pnpm --filter @repo/api exec tsx src/scripts/generate-openapi.ts",
     "api-client": "pnpm --filter @repo/api-client build"

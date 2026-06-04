@@ -147,6 +147,12 @@ export const en = {
       accepted: 'Invitation accepted!',
       failed: 'Could not accept the invitation.',
       cta: 'Accept',
+      invitedTo: 'You were invited to {{org}}.',
+      notForYou: 'This invitation is not for the logged-in account.',
+      useInviteEmail: 'Sign in with the email that received the invitation.',
+      switchAccount: 'Switch account',
+      verifyFirst: 'Verify your email before accepting the invitation.',
+      invalid: 'Invalid or expired invitation.',
     },
     createFailed: 'Failed to create the organization',
     teams: {

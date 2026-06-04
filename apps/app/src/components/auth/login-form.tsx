@@ -19,7 +19,7 @@ import {
 } from '@repo/ui/components/tabs'
 import { authClient } from '@repo/utils/auth-client'
 import { useQueryClient } from '@tanstack/react-query'
-import { useRouter } from '@tanstack/react-router'
+import { useRouter, useSearch } from '@tanstack/react-router'
 import { useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
@@ -34,14 +34,18 @@ export function LoginForm() {
   const { t } = useTranslation(['auth', 'validation'])
   const router = useRouter()
   const queryClient = useQueryClient()
+  const { redirect } = useSearch({ from: '/_auth' })
   const [googleLoading, setGoogleLoading] = useState(false)
+
+  // Destino pós-login: o ?redirect= (ex.: convite) ou o dashboard.
+  const destination = redirect || '/dashboard'
 
   // Após autenticar, remove a sessão do cache (ensureQueryData só revalida
   // dado stale com revalidateIfStale; removendo, ele é forçado a refazer o
-  // fetch e os guards _app/_auth enxergam a sessão nova) e navega.
-  async function goToDashboard() {
+  // fetch e os guards _app/_auth enxergam a sessão nova) e navega ao destino.
+  async function goAfterAuth() {
     queryClient.removeQueries({ queryKey: ['session'] })
-    await router.navigate({ to: '/dashboard' })
+    router.history.push(destination)
   }
 
   const signInSchema = useMemo(
@@ -78,7 +82,7 @@ export function LoginForm() {
       toast.error(error.message ?? t('errors.signInFailed'))
       return
     }
-    await goToDashboard()
+    await goAfterAuth()
   }
 
   async function onSignUp(values: SignUpValues) {
@@ -91,14 +95,14 @@ export function LoginForm() {
       toast.error(error.message ?? t('errors.signUpFailed'))
       return
     }
-    await goToDashboard()
+    await goAfterAuth()
   }
 
   async function onGoogle() {
     setGoogleLoading(true)
     const { error } = await authClient.signIn.social({
       provider: 'google',
-      callbackURL: `${window.location.origin}/dashboard`,
+      callbackURL: `${window.location.origin}${destination}`,
     })
     if (error) {
       toast.error(t('googleNotConfigured'))
