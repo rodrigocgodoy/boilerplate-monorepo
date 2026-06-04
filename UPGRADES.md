@@ -587,3 +587,40 @@ scope.get('/v1/things', { preHandler: requireApiKey('things:read'), schema }, h)
   no `requireQuota`-style e documente o catálogo.
 - Não há rate-limit por chave embutido — combine com Redis (`UPGRADES.md` →
   Redis) se precisar.
+
+---
+
+## LGPD/GDPR (export + exclusão)
+
+Direitos do titular: **exportar** os dados pessoais e **excluir** a conta.
+Relevante no Brasil (LGPD) e na UE (GDPR).
+
+### Export
+
+- `GET /me/export` (`MeService.exportUserData`) compila os dados pessoais do
+  usuário num JSON para **download** (rota `hide: true` — é um arquivo, não entra
+  no OpenAPI/Kubb). O front (`/account`) faz `fetch` com credenciais e salva.
+- **Sanitização:** nunca inclui senha, tokens de OAuth, token de sessão nem o
+  hash das API keys. Inclui: perfil, contas/sessões (sanitizadas), organizações,
+  API keys (sem hash) e a trilha de auditoria do usuário.
+- **Escala:** para volumes grandes, troque o export síncrono por um job (#5) que
+  gera o arquivo no S3 (#14) e envia o link por e-mail.
+
+### Exclusão de conta
+
+- `user.deleteUser` do Better Auth, ligado em `configs.ts`. Sem
+  `sendDeleteAccountVerification`, exige **reautenticação por senha** — o front
+  (`/account`) coleta a senha e chama `authClient.deleteUser({ password })`.
+- O callback **`afterDelete`** limpa o que não cai por FK: apaga as API keys do
+  usuário e **anonimiza** os audit logs (`actorId → null`, preservando o evento).
+  Member/sessions/accounts/invitations caem por cascade (FK → `users`).
+
+### Atenção
+
+- **OAuth-only** (sem senha): habilite `sendDeleteAccountVerification` para
+  exclusão por link de e-mail.
+- A org **não** é apagada com o usuário (billing/membros seguem). Se o usuário é
+  o único owner, decida a política (transferir/encerrar) antes de liberar em
+  produção.
+- O export expõe dados pessoais — sirva sempre sobre sessão autenticada (já é o
+  caso) e por HTTPS.

@@ -349,4 +349,33 @@ export const en = {
     never: 'Never',
     neverUsed: 'Never used',
   },
+  account: {
+    nav: 'Account',
+    title: 'Account',
+    description: 'Manage your data and your account.',
+    back: 'Back',
+    export: {
+      title: 'Export my data',
+      description:
+        'Download a JSON with your personal data (profile, sessions, organizations, keys and audit trail). LGPD/GDPR.',
+      action: 'Export (JSON)',
+      exporting: 'Exporting...',
+      failed: 'Failed to export data.',
+    },
+    delete: {
+      title: 'Delete account',
+      description:
+        'Removes your account and revokes access. This is permanent and cannot be undone.',
+      action: 'Delete my account',
+      confirmTitle: 'Confirm deletion',
+      confirmDescription:
+        'Enter your password to confirm. Your account will be deleted immediately.',
+      password: 'Password',
+      cancel: 'Cancel',
+      confirm: 'Delete permanently',
+      deleting: 'Deleting...',
+      done: 'Account deleted.',
+      failed: 'Could not delete the account.',
+    },
+  },
 } as const
