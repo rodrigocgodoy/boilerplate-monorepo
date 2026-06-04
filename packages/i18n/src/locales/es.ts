@@ -413,4 +413,17 @@ export const es = {
       saveFailed: 'Error al guardar las preferencias.',
     },
   },
+  storage: {
+    notConfigured: 'Subidas no configuradas. Mira UPGRADES.md.',
+    invalidType: 'Tipo de archivo no soportado.',
+    avatar: {
+      title: 'Foto de perfil',
+      description: 'PNG, JPG, WEBP o GIF (hasta 2 MB).',
+      change: 'Cambiar foto',
+      uploading: 'Subiendo...',
+      updated: 'Foto actualizada.',
+      failed: 'Error al subir la imagen.',
+      tooLarge: 'Imagen demasiado grande (máx. 2 MB).',
+    },
+  },
 } as const
