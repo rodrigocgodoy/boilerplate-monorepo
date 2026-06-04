@@ -24,13 +24,14 @@ import { ChevronLeft } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
+import { AvatarUpload } from '@/components/avatar-upload'
 
 export const Route = createFileRoute('/_app/account')({
   component: AccountPage,
 })
 
 function AccountPage() {
-  const { t } = useTranslation('account')
+  const { t } = useTranslation(['account', 'storage'])
   const router = useRouter()
   const queryClient = useQueryClient()
   const [exporting, setExporting] = useState(false)
@@ -86,6 +87,17 @@ function AccountPage() {
           </Link>
         </Button>
       </header>
+
+      {/* Foto de perfil (avatar) */}
+      <Card>
+        <CardHeader>
+          <CardTitle>{t('storage:avatar.title')}</CardTitle>
+          <CardDescription>{t('storage:avatar.description')}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <AvatarUpload />
+        </CardContent>
+      </Card>
 
       {/* Exportar dados (LGPD/GDPR) */}
       <Card>

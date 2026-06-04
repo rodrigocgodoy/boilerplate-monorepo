@@ -87,24 +87,32 @@ na API — assim a API só enfileira e o worker processa.
 
 ## MinIO / S3 (uploads de arquivos)
 
-Storage S3-compatível para uploads. MinIO roda local; em produção troque pelas
-credenciais do seu provedor (AWS S3, Cloudflare R2, etc.).
+Upload de arquivos (#14) via **URL pré-assinada**: o servidor só assina; o
+arquivo vai **direto** do browser pro S3 (não passa pela API). Já implementado no
+módulo `apps/api/src/modules/storage` + `AvatarUpload` no front. **Opt-in**: sem
+S3 configurado, a rota responde **503**.
 
-1. **docker-compose.yml** — descomente os serviços `minio` e `minio-init` e a
-   entrada `minio:` em `volumes:`.
-2. **.env** — descomente o bloco `S3_*` e `MINIO_*`.
-3. **apps/api** — instale o SDK e o multipart:
-   ```bash
-   pnpm --filter @repo/api add @aws-sdk/client-s3 @fastify/multipart
-   ```
-4. **environment.ts** — adicione `S3_ENDPOINT`, `S3_ACCESS_KEY`, `S3_SECRET_KEY`,
-   `S3_BUCKET`, `S3_REGION`, `S3_PUBLIC_URL` ao schema.
-5. **plugin.ts** — registre o multipart:
-   ```ts
-   import multipart from '@fastify/multipart'
-   await app.register(multipart, { limits: { fileSize: 50 * 1024 * 1024 } })
-   ```
-6. Console do MinIO em `http://localhost:9001` (login = `S3_ACCESS_KEY` / `S3_SECRET_KEY`).
+**Ativar:**
+
+1. **docker-compose.yml** — descomente os serviços `minio`/`minio-init` e o
+   volume `minio:` (dev local). Console em `http://localhost:9001`.
+2. **.env** — preencha `S3_BUCKET`, `S3_ACCESS_KEY`, `S3_SECRET_KEY` e, p/ MinIO/
+   R2, `S3_ENDPOINT` + `S3_PUBLIC_URL` (base pública dos objetos). `S3_REGION`
+   default `auto`. `AVATAR_MAX_BYTES` limita o avatar (default 2 MB).
+3. Pronto — `POST /uploads/avatar` passa a assinar uploads.
+
+**Como funciona:**
+
+- **`StorageService.presignAvatar`** usa `createPresignedPost`
+  (`@aws-sdk/s3-presigned-post`): a policy força o `Content-Type` e o
+  `content-length-range` — **valida tipo e tamanho no storage**, não só no
+  client. `forcePathStyle` liga automaticamente quando há `S3_ENDPOINT` (MinIO).
+- **Fluxo no front (`/account`):** pede o presign → `POST` multipart direto pro
+  bucket → salva a URL pública em `user.image` (`authClient.updateUser`).
+- **Tipos aceitos (avatar):** PNG, JPEG, WEBP, GIF (edite em `storage/service.ts`).
+
+**Estender para outros uploads:** replique `presignAvatar` com outro prefixo de
+chave e suas próprias `Conditions`; exponha uma rota nova e consuma igual.
 
 ---
 

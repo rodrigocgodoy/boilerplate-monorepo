@@ -412,4 +412,17 @@ export const ptBR = {
       saveFailed: 'Falha ao salvar as preferências.',
     },
   },
+  storage: {
+    notConfigured: 'Upload não configurado. Veja UPGRADES.md.',
+    invalidType: 'Tipo de arquivo não suportado.',
+    avatar: {
+      title: 'Foto de perfil',
+      description: 'PNG, JPG, WEBP ou GIF (até 2 MB).',
+      change: 'Trocar foto',
+      uploading: 'Enviando...',
+      updated: 'Foto atualizada.',
+      failed: 'Falha ao enviar a imagem.',
+      tooLarge: 'Imagem muito grande (máx. 2 MB).',
+    },
+  },
 } as const
