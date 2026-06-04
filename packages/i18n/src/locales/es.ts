@@ -426,4 +426,40 @@ export const es = {
       tooLarge: 'Imagen demasiado grande (máx. 2 MB).',
     },
   },
+  email: {
+    verification: {
+      subject: 'Confirma tu email',
+      heading: 'Confirma tu email',
+      body: 'Hola{{name}}, confirma tu dirección de email para activar tu cuenta.',
+      cta: 'Confirmar email',
+      ignore: 'Si no creaste esta cuenta, ignora este email.',
+    },
+    reset: {
+      subject: 'Restablecer tu contraseña',
+      heading: 'Restablecer contraseña',
+      body: 'Hola{{name}}, usa el código de abajo para crear una nueva contraseña. Expira en 5 minutos.',
+      ignore:
+        'Si no lo solicitaste, ignora este email — tu contraseña sigue igual.',
+    },
+    invitation: {
+      subject: 'Invitación a {{org}}',
+      heading: 'Has sido invitado',
+      body: '{{inviter}} te invitó a unirte a {{org}}.',
+      bodyNoInviter: 'Has sido invitado a unirte a {{org}}.',
+      cta: 'Aceptar invitación',
+      ignore: 'Si no esperabas esta invitación, puedes ignorar este email.',
+    },
+    subscription: {
+      subjectActive: 'Suscripción activa',
+      subjectCancelled: 'Suscripción cancelada',
+      headingActive: 'Suscripción activa 🎉',
+      headingCancelled: 'Suscripción cancelada',
+      bodyActive: 'El plan {{plan}} de {{org}} está activo. ¡Gracias!',
+      bodyCancelled:
+        'La suscripción del plan {{plan}} de {{org}} fue cancelada.',
+    },
+    notification: {
+      cta: 'Ver detalles',
+    },
+  },
 } as const

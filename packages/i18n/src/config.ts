@@ -22,6 +22,7 @@ export const namespaces = [
   'account',
   'notifications',
   'storage',
+  'email',
 ] as const
 
 export type Namespace = (typeof namespaces)[number]

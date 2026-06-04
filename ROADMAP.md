@@ -70,6 +70,9 @@ Ideias priorizadas para evoluir este boilerplate de **monorepo SaaS**. Cada item
 - **Reset de senha por código (OTP)** no app: "esqueci a senha" no login →
   `/forgot-password` (e-mail → código → nova senha). Plugin `emailOTP` do Better
   Auth, sem link/deep link — amigável a app mobile.
+- **Multi-idioma:** textos no namespace `email` do `@repo/i18n` (pt-BR/en/es);
+  templates/senders recebem `locale` (`emailT`). O idioma viaja no job `email` e
+  é resolvido do Accept-Language nas hooks do Better Auth. Ver `UPGRADES.md`.
 - **Próximos passos:** e-mails de billing adicionais (pagamento falhou, trial
   acabando).
 
