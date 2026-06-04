@@ -18,19 +18,25 @@ datasource db {
 // ──────────────────────────────────────────────
 
 model Users {
-  id            String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id            String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name          String
-  email         String     @unique
-  emailVerified Boolean    @default(false)
+  email         String       @unique
+  emailVerified Boolean      @default(false)
   image         String?
-  createdAt     DateTime   @default(now())
-  updatedAt     DateTime   @updatedAt
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
   sessions      Sessions[]
   accounts      Accounts[]
   // Back-relations dos models de organização (Better Auth)
   teammembers   TeamMember[]
   members       Member[]
   invitations   Invitation[]
+
+  // Plugin `admin` (RBAC de plataforma): role de sistema + ban.
+  role       String?
+  banned     Boolean?  @default(false)
+  banReason  String?
+  banExpires DateTime?
 
   @@map("users")
 }
@@ -48,6 +54,8 @@ model Sessions {
 
   activeOrganizationId String? @db.Uuid
   activeTeamId         String? @db.Uuid
+
+  impersonatedBy String?
 
   @@index([userId])
   @@map("sessions")
