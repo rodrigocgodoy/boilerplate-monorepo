@@ -1,4 +1,6 @@
 import type { Plans, Subscriptions } from '@repo/database'
+import { AUDIT_ACTIONS } from '@/modules/audit/actions.js'
+import { requestMeta } from '@/modules/audit/request.js'
 import {
   isPaymentEnabled,
   PaymentError,
@@ -153,6 +155,15 @@ export const subscriptionRoute = tp(async scope => {
           request.body.planSlug,
           'ORGANIZATION',
         )
+        await scope.services.audit.record({
+          action: AUDIT_ACTIONS.subscriptionSubscribe,
+          actorId: session.userId,
+          organizationId: session.activeOrganizationId,
+          targetType: 'subscription',
+          targetId: result.subscriptionId,
+          metadata: { planSlug: request.body.planSlug },
+          ...requestMeta(request),
+        })
         return reply.status(200).send(result)
       } catch (error) {
         const { status, body } = subscriptionErrorReply(error, request.t)
@@ -201,6 +212,15 @@ export const subscriptionRoute = tp(async scope => {
           session.activeOrganizationId,
           'ORGANIZATION',
         )
+        if (cancelled) {
+          await scope.services.audit.record({
+            action: AUDIT_ACTIONS.subscriptionCancel,
+            actorId: session.userId,
+            organizationId: session.activeOrganizationId,
+            targetType: 'subscription',
+            ...requestMeta(request),
+          })
+        }
         return reply.status(200).send({ cancelled })
       } catch (error) {
         const { status, body } = subscriptionErrorReply(error, request.t)

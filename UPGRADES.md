@@ -412,3 +412,43 @@ existentes, no próximo login (idempotente). Vazio = nenhum admin automático
 - Permissões finas (além de `admin`/`user`) podem ser modeladas com
   `ac`/`roles` próprios do plugin admin — veja a skill
   `better-auth-best-practices`.
+
+---
+
+## Audit log (trilha de auditoria)
+
+Trilha de ações sensíveis por **organização** (mudou role, removeu membro,
+cancelou assinatura…). Módulo `apps/api/src/modules/audit` + model `AuditLogs`.
+
+### Como funciona
+
+- **Model `AuditLogs`** (`audit_logs`): `{ actorId, action, organizationId,
+  targetType, targetId, metadata, ip, userAgent, createdAt }`. Sem relação
+  formal (mesma nota dos modelos da app). Migration `audit_logs`.
+- **`AuditService.record(entry)`** é **best-effort**: roda num `try/catch` e
+  nunca lança no caminho do request — falhar a auditoria não derruba a ação.
+- **Duas fontes de eventos:**
+  - **Nossos módulos:** o handler chama `audit.record(...)` (ex.: assinar/
+    cancelar assinatura no `subscription/route.ts`), com IP/UA via `requestMeta`.
+  - **Better Auth (`/auth/*`):** um hook `hooks.after` (`auditAfterHook`) audita
+    as ações mutantes do plugin organization (remover membro, mudar role,
+    convites, times…) — que não passam pelos nossos módulos. O mapa
+    path→ação está em `audit/actions.ts` (`AUDIT_ORG_PATHS`).
+- **`GET /audit`** devolve a trilha da organização ativa (mais recentes
+  primeiro). Front: página `/audit` (link no header do dashboard).
+
+### Adicionar uma ação à trilha
+
+- **Ação no seu código:** `await app.services.audit.record({ action: 'x.y',
+  actorId, organizationId, targetType, targetId, metadata, ...requestMeta(request) })`.
+- **Ação do Better Auth:** adicione o path em `AUDIT_ORG_PATHS`
+  (`audit/actions.ts`). Para ações de `/admin/*` (role de plataforma/ban),
+  estenda o mapa/hook de forma análoga.
+
+### Atenção
+
+- A trilha é **org-scoped**: ações de plataforma (`/admin/*`, sem organização)
+  não aparecem no `GET /audit` por padrão — adicione um escopo de plataforma
+  para super-admins se precisar.
+- Em produção com Redis, dá para registrar via fila (#5) para desacoplar a
+  escrita do request — hoje a escrita é direta e best-effort.
