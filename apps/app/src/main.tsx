@@ -11,7 +11,11 @@ import {
 import { createRouter, RouterProvider } from '@tanstack/react-router'
 import { StrictMode } from 'react'
 import ReactDOM from 'react-dom/client'
+import { initObservability, ObservabilityBoundary } from './observability'
 import { routeTree } from './routeTree.gen'
+
+// Observabilidade (Sentry) — no-op sem VITE_SENTRY_DSN. Antes do render.
+initObservability()
 
 setupApiClient()
 
@@ -58,7 +62,9 @@ if (!rootElement.innerHTML) {
   const root = ReactDOM.createRoot(rootElement)
   root.render(
     <StrictMode>
-      <App />
+      <ObservabilityBoundary>
+        <App />
+      </ObservabilityBoundary>
     </StrictMode>,
   )
 }

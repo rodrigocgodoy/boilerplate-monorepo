@@ -27,7 +27,7 @@ Ideias priorizadas para evoluir este boilerplate de **monorepo SaaS**. Cada item
 | 6 | RBAC + painel admin ✅ | 2 | 🟡 M | #1 |
 | 7 | Entitlements / limites por plano ✅ | 2 | 🟡 M | Assinaturas |
 | 8 | Audit log ✅ | 2 | 🟢 P | — |
-| 9 | Observabilidade (Sentry + OTel) | 2 | 🟡 M | — |
+| 9 | Observabilidade (Sentry + OTel) ✅ | 2 | 🟡 M | — |
 | 10 | API keys (acesso programático) | 2 | 🟢 P | #6 |
 | 11 | LGPD/GDPR (export + exclusão de conta) | 3 | 🟡 M | #5 |
 | 12 | 2FA / passkeys | 3 | 🟢 P | E-mail |
@@ -155,11 +155,19 @@ Ideias priorizadas para evoluir este boilerplate de **monorepo SaaS**. Cada item
 - **Próximos passos:** escopo de plataforma para ações `/admin/*` (role/ban) e,
   com Redis, registrar via fila (#5) para desacoplar a escrita do request.
 
-### 9. Observabilidade (Sentry + OpenTelemetry) 🟡
+### 9. Observabilidade (Sentry + OpenTelemetry) 🟡 — ✅ FEITO
 
-- **O quê:** captura de erros, traces distribuídos e logs estruturados.
-- **Como encaixa:** `@sentry/node` na API e `@sentry/react` no app; OTel
-  instrumentando Fastify/Prisma; pino (já presente) com `requestId`.
+- **Status:** implementado. Ver `UPGRADES.md` → "Observabilidade (Sentry)".
+- **Opt-in:** sem `SENTRY_DSN`/`VITE_SENTRY_DSN` é **no-op** (nada inicializa).
+- **API:** `@sentry/node` (v10, **baseado em OpenTelemetry** → auto-instrumenta
+  Fastify/Prisma/HTTP = traces distribuídos). Init em `instrument.ts` (1º import
+  + `node --import` em prod); captura via `setupFastifyErrorHandler`. `requestId`
+  via `genReqId`/`x-request-id` (no log `reqId` e no header de resposta). Worker
+  também instrumentado.
+- **App:** `@sentry/react` (init opt-in + `browserTracingIntegration`) +
+  `ObservabilityBoundary` (Sentry ErrorBoundary com fallback).
+- **Próximos passos:** exportar OTel para um backend não-Sentry (OTLP) e
+  Session Replay no front, se necessário.
 
 ### 10. API keys (acesso programático) 🟢 🧩
 
