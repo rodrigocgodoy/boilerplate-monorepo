@@ -16,6 +16,7 @@ import { Route as AuthLoginRouteImport } from './routes/_auth/login'
 import { Route as AuthForgotPasswordRouteImport } from './routes/_auth/forgot-password'
 import { Route as AppSubscriptionRouteImport } from './routes/_app/subscription'
 import { Route as AppOrganizationRouteImport } from './routes/_app/organization'
+import { Route as AppNotificationsRouteImport } from './routes/_app/notifications'
 import { Route as AppDashboardRouteImport } from './routes/_app/dashboard'
 import { Route as AppBillingRouteImport } from './routes/_app/billing'
 import { Route as AppAuditRouteImport } from './routes/_app/audit'
@@ -58,6 +59,11 @@ const AppSubscriptionRoute = AppSubscriptionRouteImport.update({
 const AppOrganizationRoute = AppOrganizationRouteImport.update({
   id: '/organization',
   path: '/organization',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppNotificationsRoute = AppNotificationsRouteImport.update({
+  id: '/notifications',
+  path: '/notifications',
   getParentRoute: () => AppRoute,
 } as any)
 const AppDashboardRoute = AppDashboardRouteImport.update({
@@ -119,6 +125,7 @@ export interface FileRoutesByFullPath {
   '/audit': typeof AppAuditRoute
   '/billing': typeof AppBillingRoute
   '/dashboard': typeof AppDashboardRoute
+  '/notifications': typeof AppNotificationsRoute
   '/organization': typeof AppOrganizationRoute
   '/subscription': typeof AppSubscriptionRoute
   '/forgot-password': typeof AuthForgotPasswordRoute
@@ -134,6 +141,7 @@ export interface FileRoutesByTo {
   '/audit': typeof AppAuditRoute
   '/billing': typeof AppBillingRoute
   '/dashboard': typeof AppDashboardRoute
+  '/notifications': typeof AppNotificationsRoute
   '/organization': typeof AppOrganizationRoute
   '/subscription': typeof AppSubscriptionRoute
   '/forgot-password': typeof AuthForgotPasswordRoute
@@ -153,6 +161,7 @@ export interface FileRoutesById {
   '/_app/audit': typeof AppAuditRoute
   '/_app/billing': typeof AppBillingRoute
   '/_app/dashboard': typeof AppDashboardRoute
+  '/_app/notifications': typeof AppNotificationsRoute
   '/_app/organization': typeof AppOrganizationRoute
   '/_app/subscription': typeof AppSubscriptionRoute
   '/_auth/forgot-password': typeof AuthForgotPasswordRoute
@@ -172,6 +181,7 @@ export interface FileRouteTypes {
     | '/audit'
     | '/billing'
     | '/dashboard'
+    | '/notifications'
     | '/organization'
     | '/subscription'
     | '/forgot-password'
@@ -187,6 +197,7 @@ export interface FileRouteTypes {
     | '/audit'
     | '/billing'
     | '/dashboard'
+    | '/notifications'
     | '/organization'
     | '/subscription'
     | '/forgot-password'
@@ -205,6 +216,7 @@ export interface FileRouteTypes {
     | '/_app/audit'
     | '/_app/billing'
     | '/_app/dashboard'
+    | '/_app/notifications'
     | '/_app/organization'
     | '/_app/subscription'
     | '/_auth/forgot-password'
@@ -269,6 +281,13 @@ declare module '@tanstack/react-router' {
       path: '/organization'
       fullPath: '/organization'
       preLoaderRoute: typeof AppOrganizationRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/notifications': {
+      id: '/_app/notifications'
+      path: '/notifications'
+      fullPath: '/notifications'
+      preLoaderRoute: typeof AppNotificationsRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/dashboard': {
@@ -375,6 +394,7 @@ interface AppRouteChildren {
   AppAuditRoute: typeof AppAuditRoute
   AppBillingRoute: typeof AppBillingRoute
   AppDashboardRoute: typeof AppDashboardRoute
+  AppNotificationsRoute: typeof AppNotificationsRoute
   AppOrganizationRoute: typeof AppOrganizationRoute
   AppSubscriptionRoute: typeof AppSubscriptionRoute
   AppIndexRoute: typeof AppIndexRoute
@@ -389,6 +409,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppAuditRoute: AppAuditRoute,
   AppBillingRoute: AppBillingRoute,
   AppDashboardRoute: AppDashboardRoute,
+  AppNotificationsRoute: AppNotificationsRoute,
   AppOrganizationRoute: AppOrganizationRoute,
   AppSubscriptionRoute: AppSubscriptionRoute,
   AppIndexRoute: AppIndexRoute,
