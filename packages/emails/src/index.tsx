@@ -47,13 +47,13 @@ export function sendVerificationEmail(p: {
 export function sendPasswordResetEmail(p: {
   to: string
   name?: string
-  url: string
+  otp: string
 }) {
   return deliver(
     p.to,
     'Redefinir sua senha',
-    <ResetPasswordEmail name={p.name} url={p.url} />,
-    p.url,
+    <ResetPasswordEmail name={p.name} otp={p.otp} />,
+    `código: ${p.otp}`,
   )
 }
 

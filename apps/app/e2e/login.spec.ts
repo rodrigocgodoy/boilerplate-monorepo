@@ -57,7 +57,9 @@ test('login leva ao fluxo de "esqueci a senha"', async ({ page }) => {
   await expect(page.locator('#forgot-email')).toBeVisible()
 })
 
-test('reset-password sem token mostra link inválido', async ({ page }) => {
+test('pedir o código avança para o passo do OTP + nova senha', async ({
+  page,
+}) => {
   await page.route('**/auth/get-session*', route =>
     route.fulfill({
       status: 200,
@@ -65,10 +67,18 @@ test('reset-password sem token mostra link inválido', async ({ page }) => {
       body: 'null',
     }),
   )
-  // Sem ?token=, a página oferece pedir um novo link em vez do formulário.
-  await page.goto('/reset-password')
-  await expect(page.locator('#reset-password')).toHaveCount(0)
-  await expect(
-    page.getByRole('link', { name: /novo link|new link|nuevo enlace/i }),
-  ).toBeVisible()
+  // Reset por OTP: pedir o código (request-password-reset) revela os campos de
+  // código e nova senha, sem depender da API real.
+  await page.route('**/auth/email-otp/request-password-reset*', route =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ success: true }),
+    }),
+  )
+  await page.goto('/forgot-password')
+  await page.locator('#forgot-email').fill('user@example.com')
+  await page.getByRole('button').first().click()
+  await expect(page.locator('#reset-otp')).toBeVisible()
+  await expect(page.locator('#reset-password')).toBeVisible()
 })
