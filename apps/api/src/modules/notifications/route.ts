@@ -186,6 +186,7 @@ export const notificationsRoute = tp(async scope => {
         category: 'system',
         title: request.t('notifications:test.title'),
         body: request.t('notifications:test.body'),
+        locale: request.lang,
       })
       const unreadCount = await notifications.unreadCount(session.userId)
       return reply.status(200).send({ ok: true, unreadCount })

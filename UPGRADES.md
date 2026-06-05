@@ -160,10 +160,22 @@ helper de envio via Resend) e fiado nos fluxos de auth/org/billing.
 **Templates e preview:**
 
 - Templates em `packages/emails/src/emails/*.tsx` (verificação, reset,
-  convite, assinatura) + casca compartilhada `_layout.tsx`.
+  convite, assinatura, notificação) + casca compartilhada `_layout.tsx`.
 - Preview visual: `pnpm email:dev` (servidor do React Email).
 - Para um novo e-mail: crie o template e exporte um sender em
   `packages/emails/src/index.tsx`.
+
+**Multi-idioma (i18n):**
+
+- Os textos dos e-mails vivem no namespace `email` do `@repo/i18n` (pt-BR / en /
+  es). Cada template e sender recebe um `locale?` e traduz via `emailT(locale)`
+  (`packages/emails/src/i18n.ts`) — assunto incluso. Idioma ausente/inválido cai
+  no fallback (pt-BR).
+- O `locale` viaja no job `email` (`{ locale?: string }`). As hooks do Better
+  Auth (verificação, reset, convite) resolvem o idioma do **Accept-Language** do
+  request (`localeFrom`); a notificação usa o `request.lang`. Webhooks de billing
+  (sem request) caem no fallback.
+- Para um novo idioma: adicione o locale em `@repo/i18n` (já cobre o `email`).
 
 ---
 

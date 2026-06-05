@@ -1,29 +1,40 @@
 import { Heading, Text } from '@react-email/components'
+import { emailT } from '../i18n.js'
 import { EmailLayout } from './_layout.js'
 
 export interface SubscriptionEmailProps {
   organizationName: string
   planName: string
   status: 'active' | 'cancelled'
+  locale?: string
 }
 
 export default function SubscriptionEmail({
   organizationName,
   planName,
   status,
+  locale,
 }: SubscriptionEmailProps) {
+  const t = emailT(locale)
   const active = status === 'active'
+  const vars = { plan: planName, org: organizationName }
   return (
     <EmailLayout
-      preview={active ? 'Sua assinatura está ativa' : 'Assinatura cancelada'}
+      preview={
+        active
+          ? t('subscription.subjectActive')
+          : t('subscription.subjectCancelled')
+      }
     >
       <Heading className="m-0 text-gray-900 text-xl">
-        {active ? 'Assinatura ativa 🎉' : 'Assinatura cancelada'}
+        {active
+          ? t('subscription.headingActive')
+          : t('subscription.headingCancelled')}
       </Heading>
       <Text className="text-gray-700 text-sm">
         {active
-          ? `O plano ${planName} de ${organizationName} está ativo. Obrigado!`
-          : `A assinatura do plano ${planName} de ${organizationName} foi cancelada.`}
+          ? t('subscription.bodyActive', vars)
+          : t('subscription.bodyCancelled', vars)}
       </Text>
     </EmailLayout>
   )
@@ -33,4 +44,5 @@ SubscriptionEmail.PreviewProps = {
   organizationName: 'Acme Inc',
   planName: 'Pro (mensal)',
   status: 'active',
+  locale: 'pt-BR',
 } satisfies SubscriptionEmailProps
