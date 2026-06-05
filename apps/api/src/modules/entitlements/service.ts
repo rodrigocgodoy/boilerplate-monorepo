@@ -102,8 +102,9 @@ export class EntitlementsService {
   /**
    * Consome `amount` de uma métrica medida, de forma atômica e dentro da quota:
    * lê, valida e grava na mesma transação. Se já estourou, NÃO incrementa e
-   * devolve `allowed=false`. Métricas de contagem viva (seats) não são
-   * "consumidas" — caem no `checkQuota`.
+   * devolve `allowed=false`. Em sucesso devolve `allowed=true` (mesmo que o
+   * consumo atinja o limite — `remaining` reflete o novo estado). Métricas de
+   * contagem viva (seats) não são "consumidas" — caem no `checkQuota`.
    */
   async consume(
     orgId: string,
@@ -130,7 +131,9 @@ export class EntitlementsService {
         create: { organizationId: orgId, metric, period, used: next },
         update: { used: next },
       })
-      return evaluateQuota(limit, next, metric)
+      // Consumo bem-sucedido: `allowed=true` (atingir o limite agora não torna
+      // este consumo inválido). `remaining` já reflete o novo total.
+      return { ...evaluateQuota(limit, next, metric), allowed: true }
     })
   }
 }

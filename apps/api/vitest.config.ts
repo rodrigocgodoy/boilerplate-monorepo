@@ -1,6 +1,11 @@
 import { resolve } from 'node:path'
 import { defineConfig } from 'vitest/config'
 
+// Banco de teste opcional: com `TEST_DATABASE_URL` setado (CI ou dev), os testes
+// de integração (`*.int.test.ts`) rodam contra ele; senão se auto-pulam
+// (`describe.skipIf`) e o `DATABASE_URL` fake nunca é consultado.
+const testDbUrl = process.env.TEST_DATABASE_URL
+
 export default defineConfig({
   // Resolve o alias `@/*` (mesmo do tsconfig) para o Vitest.
   resolve: {
@@ -9,6 +14,10 @@ export default defineConfig({
   test: {
     environment: 'node',
     include: ['test/**/*.test.ts', 'src/**/*.test.ts'],
+    // Com banco de teste, roda os arquivos em série: eles compartilham o mesmo
+    // Postgres e o `resetDb()` (TRUNCATE) de um arquivo não pode apagar os dados
+    // de outro no meio do teste. Sem banco (só unitários), mantém o paralelismo.
+    fileParallelism: !testDbUrl,
     // Env hermético: não depende do .env real. A API não conecta no banco ao
     // subir (Pool é lazy); só rotas que consultam o DB precisariam dele.
     env: {
@@ -17,7 +26,9 @@ export default defineConfig({
       BETTER_AUTH_SECRET: 'test-better-auth-secret',
       BETTER_AUTH_URL: 'http://localhost:3333',
       APP_URL: 'http://localhost:5173',
-      DATABASE_URL: 'postgresql://test:test@localhost:5432/test',
+      DATABASE_URL: testDbUrl || 'postgresql://test:test@localhost:5432/test',
+      // Repassado para os testes decidirem rodar (integração) ou pular.
+      TEST_DATABASE_URL: testDbUrl || '',
     },
   },
 })
