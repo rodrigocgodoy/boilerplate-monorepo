@@ -4,7 +4,8 @@
     "build": {
       "dependsOn": ["^build"],
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
-      "outputs": ["dist/**", "gen/**", "generated/**"]
+      "outputs": ["dist/**", "gen/**", "generated/**"],
+      "passThroughEnv": ["DATABASE_URL"]
     },
     "//#format-and-lint": {},
     "//#format-and-lint:fix": { "cache": false },

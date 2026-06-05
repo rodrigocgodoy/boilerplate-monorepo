@@ -720,3 +720,55 @@ Analytics de produto + **feature flags** + **session replay** num pacote só
 - Para flags/eventos no **servidor** (ex.: gating de API), adicione
   `posthog-node` na API.
 - Respeite consentimento/cookies do usuário conforme a sua política (LGPD/GDPR).
+
+---
+
+## Docker + deploy
+
+Imagens de produção para a API e o app + um `docker-compose.prod.yml` de
+referência (Postgres + Redis + migrate + API + worker + app).
+
+**Subir local (build + up):**
+
+```bash
+# defina COOKIE_SECRET / BETTER_AUTH_SECRET (e demais) no .env
+docker compose -f docker-compose.prod.yml up --build -d
+# API:  http://localhost:3333   ·   app: http://localhost:${APP_PORT:-3000}
+```
+
+**Como as imagens são construídas:**
+
+- **`turbo prune`** (multi-stage): cada Dockerfile poda o monorepo para o app +
+  suas deps de workspace, instala só o necessário e builda. Contexto de build =
+  **raiz** do repo (`-f apps/api/Dockerfile .`). `.dockerignore` evita copiar
+  `node_modules`/`dist`/`generated`.
+- **API (`apps/api/Dockerfile`):** bundlada com **`tsup`** (esbuild). Por quê:
+  `@repo/i18n`/`@repo/utils`/`@repo/jobs`/`@repo/emails` são consumidos como
+  **fonte TS** (ótima DX no dev), e o Node puro não roda TS — então são
+  **inlinados** no bundle. `@repo/database`/Prisma e todo o node_modules ficam
+  **externos** (Prisma resolve o client gerado em node_modules). O `prisma
+  generate` no build precisa de `DATABASE_URL` (não conecta) — há um valor dummy
+  só de build; em runtime use o real. Runner roda **não-root** e com
+  `ENV=production` (desliga swagger/`/reference`, que são dev-only).
+- **App (`apps/app/Dockerfile`):** build do Vite → SPA estática servida pelo
+  `serve`. Os **`VITE_*` são assados no bundle em build time** — passe-os como
+  `--build-arg` (`VITE_API_URL`, `VITE_SENTRY_DSN`, `VITE_POSTHOG_KEY`,
+  `VITE_POSTHOG_HOST`). Em runtime **não** dá para trocar a URL da API.
+
+**Compose de produção (`docker-compose.prod.yml`):**
+
+- `migrate`: roda `prisma migrate deploy` uma vez e sai (reusa a imagem da API,
+  que inclui o Prisma CLI + as migrations). API e worker só sobem após o
+  `service_completed_successfully`.
+- `worker`: reusa a imagem da API com `command` apontando para `dist/worker.js`
+  (a API sobe com `JOBS_IN_PROCESS=false` → só enfileira).
+- Healthchecks em postgres/redis/api; `DATABASE_URL`/`REDIS_URL` apontam para os
+  serviços da rede do compose.
+
+**Próximos passos para produção real:**
+
+- Publicar as imagens num **registry** (ex.: GHCR) via CI e usar `image:` em vez
+  de `build:` no provedor.
+- Postgres/Redis **gerenciados** (o compose embute ambos só para começar).
+- TLS/ível: o app pode ir atrás de um CDN/edge; a API trata SSL no edge
+  (cookies já usam `SameSite=None; Secure` fora de `development`).
