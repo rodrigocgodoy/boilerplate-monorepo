@@ -1,0 +1,12 @@
+# Não envie artefatos/local para o contexto de build do Docker.
+**/node_modules
+**/dist
+**/.turbo
+**/generated
+packages/api-client/gen
+apps/app/playwright-report
+apps/app/test-results
+.git
+.github
+**/.env
+**/*.log

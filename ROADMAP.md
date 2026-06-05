@@ -35,7 +35,7 @@ Ideias priorizadas para evoluir este boilerplate de **monorepo SaaS**. Cada item
 | 14 | Upload de avatar/arquivos (S3) ✅ | 3 | 🟢 P | S3 |
 | 15 | Product analytics + feature flags (PostHog) ✅ | 3 | 🟢 P | — |
 | 16 | Storybook no `packages/ui` | 3 | 🟢 P | — |
-| 17 | Dockerfile + deploy | 3 | 🟢 P | — |
+| 17 | Dockerfile + deploy ✅ | 3 | 🟢 P | — |
 
 **Top 3 pra dar o maior salto:** #1 Organizations, #2 E-mail, #3+#4 Testes+CI.
 
@@ -259,10 +259,23 @@ Ideias priorizadas para evoluir este boilerplate de **monorepo SaaS**. Cada item
 
 - Catálogo dos primitivos shadcn + tokens; ajuda a manter consistência visual.
 
-### 17. Dockerfile + deploy 🟢
+### 17. Dockerfile + deploy 🟢 — ✅ FEITO
 
-- `Dockerfile` para `apps/api` e `apps/app` (build multi-stage), `docker-compose`
-  de produção e/ou config de deploy (o código já trata SSL no edge tipo Railway).
+- **Status:** implementado. Ver `UPGRADES.md` → "Docker + deploy".
+- `apps/api/Dockerfile` e `apps/app/Dockerfile` multi-stage com **`turbo prune`**
+  (isola cada app + suas deps de workspace) + `.dockerignore`. Build a partir da
+  raiz do monorepo.
+- **API bundlada com `tsup`** (esbuild): os pacotes internos consumidos como
+  fonte TS (`@repo/i18n`/`utils`/`jobs`/`emails`) são inlinados — o Node puro não
+  roda TS. `@repo/database`/Prisma e node_modules ficam externos. `tsc --noEmit`
+  preserva o typecheck. Runner roda como **não-root**, `ENV=production`.
+- **App:** SPA estática servida por `serve`; os `VITE_*` são **build args**
+  (assados no bundle).
+- `docker-compose.prod.yml`: Postgres + Redis + **migrate** (one-shot
+  `migrate deploy`) + API + **worker** (reusa a imagem) + app, com healthchecks
+  e ordem por `depends_on`. Validado ponta a ponta.
+- **Próximos passos:** publicar as imagens num registry (GHCR) via CI e config de
+  deploy do provedor (Railway/Fly/etc.).
 
 ---
 
