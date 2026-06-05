@@ -66,6 +66,8 @@ export class NotificationService {
       title: string
       body?: string
       url?: string
+      /** Idioma do e-mail (fallback no default quando ausente). */
+      locale?: string
     },
   ): Promise<void> {
     const category = input.category ?? 'system'
@@ -95,6 +97,7 @@ export class NotificationService {
           title: input.title,
           body: input.body,
           url: input.url,
+          locale: input.locale,
         })
       }
     }

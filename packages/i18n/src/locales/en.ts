@@ -423,4 +423,39 @@ export const en = {
       tooLarge: 'Image too large (max 2 MB).',
     },
   },
+  email: {
+    verification: {
+      subject: 'Confirm your email',
+      heading: 'Confirm your email',
+      body: 'Hi{{name}}, confirm your email address to activate your account.',
+      cta: 'Confirm email',
+      ignore: "If you didn't create this account, ignore this email.",
+    },
+    reset: {
+      subject: 'Reset your password',
+      heading: 'Reset password',
+      body: 'Hi{{name}}, use the code below to set a new password. It expires in 5 minutes.',
+      ignore:
+        "If you didn't request this, ignore this email — your password stays the same.",
+    },
+    invitation: {
+      subject: 'Invitation to {{org}}',
+      heading: "You've been invited",
+      body: '{{inviter}} invited you to join {{org}}.',
+      bodyNoInviter: "You've been invited to join {{org}}.",
+      cta: 'Accept invitation',
+      ignore: "If you weren't expecting this invitation, you can ignore it.",
+    },
+    subscription: {
+      subjectActive: 'Subscription active',
+      subjectCancelled: 'Subscription cancelled',
+      headingActive: 'Subscription active 🎉',
+      headingCancelled: 'Subscription cancelled',
+      bodyActive: 'The {{plan}} plan for {{org}} is active. Thank you!',
+      bodyCancelled: 'The {{plan}} plan for {{org}} was cancelled.',
+    },
+    notification: {
+      cta: 'View details',
+    },
+  },
 } as const

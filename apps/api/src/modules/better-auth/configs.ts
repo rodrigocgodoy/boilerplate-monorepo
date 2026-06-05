@@ -1,4 +1,5 @@
 import { prisma } from '@repo/database'
+import { resolveLanguage } from '@repo/i18n'
 import { ac, roles } from '@repo/utils/permissions'
 import type { BetterAuthOptions, betterAuth } from 'better-auth'
 import { prismaAdapter } from 'better-auth/adapters/prisma'
@@ -12,6 +13,17 @@ export type Auth = ReturnType<
 >
 
 const googleEnabled = Boolean(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET)
+
+/**
+ * Idioma do e-mail a partir do Accept-Language. Aceita tanto um `Request` web
+ * quanto o `GenericEndpointContext` do Better Auth (ambos expõem `headers.get`).
+ * Fallback no idioma default quando ausente.
+ */
+function localeFrom(ctx?: {
+  headers?: { get?: (key: string) => string | null }
+}): string {
+  return resolveLanguage(ctx?.headers?.get?.('accept-language') ?? undefined)
+}
 
 /** Se o e-mail está na lista de super-admins (ADMIN_EMAILS). */
 function isAdminEmail(email?: string | null): boolean {
@@ -55,7 +67,7 @@ export function createAuthConfig(): BetterAuthOptions {
         },
         // Envia o convite por e-mail (Resend). Sem RESEND_API_KEY, o pacote
         // @repo/emails loga o link no console (dev). Ver UPGRADES.md.
-        sendInvitationEmail: async data => {
+        sendInvitationEmail: async (data, request) => {
           const url = new URL(
             `/accept-invitation/${data.invitation.id}`,
             env.APP_URL,
@@ -66,6 +78,7 @@ export function createAuthConfig(): BetterAuthOptions {
             organizationName: data.organization.name,
             inviterName: data.inviter.user.name,
             url,
+            locale: localeFrom(request),
           })
         },
       }),
@@ -74,9 +87,14 @@ export function createAuthConfig(): BetterAuthOptions {
       // email-verification por OTP ficam disponíveis se quiser ligar depois.
       emailOTP({
         // otpLength: 6, expiresIn: 300, allowedAttempts: 3 (defaults)
-        sendVerificationOTP: async ({ email, otp, type }) => {
+        sendVerificationOTP: async ({ email, otp, type }, request) => {
           if (type === 'forget-password') {
-            await enqueue('email', { template: 'reset', to: email, otp })
+            await enqueue('email', {
+              template: 'reset',
+              to: email,
+              otp,
+              locale: localeFrom(request),
+            })
           }
         },
       }),
@@ -101,7 +119,7 @@ export function createAuthConfig(): BetterAuthOptions {
       // (sem `requireEmailVerification`) — ligue se quiser exigir verificação.
       sendOnSignUp: true,
       autoSignInAfterVerification: true,
-      sendVerificationEmail: async ({ user, url }) => {
+      sendVerificationEmail: async ({ user, url }, request) => {
         // O `url` aponta pro endpoint do API (/auth/verify-email) com
         // callbackURL=/ (raiz do API). Após verificar, o Better Auth redireciona
         // pra esse callbackURL — reescrevemos pro app (origem em trustedOrigins)
@@ -116,6 +134,7 @@ export function createAuthConfig(): BetterAuthOptions {
           to: user.email,
           name: user.name,
           url: verifyUrl.toString(),
+          locale: localeFrom(request),
         })
       },
     },

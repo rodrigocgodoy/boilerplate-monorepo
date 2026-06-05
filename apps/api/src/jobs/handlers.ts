@@ -11,7 +11,8 @@ import {
  * Payload do job `email` — union por template. Centraliza o envio para que
  * qualquer disparo passe pela fila (retries/backoff quando o Redis está ligado).
  */
-export type EmailJob =
+// `locale` (opcional) localiza o e-mail; ausente = fallback (pt-BR).
+export type EmailJob = { locale?: string } & (
   | { template: 'verification'; to: string; name?: string; url: string }
   | { template: 'reset'; to: string; name?: string; otp: string }
   | {
@@ -35,6 +36,7 @@ export type EmailJob =
       body?: string
       url?: string
     }
+)
 
 async function handleEmail(job: EmailJob): Promise<void> {
   switch (job.template) {
