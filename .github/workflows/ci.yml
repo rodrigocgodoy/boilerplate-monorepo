@@ -70,15 +70,50 @@ jobs:
       - name: Aplicar migrations (DB de teste)
         run: pnpm --filter @repo/database exec prisma migrate deploy
 
-      - name: Test (Vitest + integração)
-        run: pnpm test
+      # `TEST_DATABASE_URL` liga os `*.int.test.ts` contra o Postgres do job.
+      # Ela precisa estar declarada em `turbo.json` (task `test:coverage`):
+      # o Turbo roda as tasks com env filtrado e, sem a declaração, a variável
+      # não chega no Vitest — a integração se auto-pula e o job fica verde sem
+      # ter tocado no banco.
+      - name: Test (Vitest + integração + cobertura)
+        run: pnpm test:coverage
         env:
-          # Liga os testes `*.int.test.ts` contra o Postgres do job.
           TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/boilerplate
+
+      - name: Upload da cobertura
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage
+          path: |
+            apps/api/coverage
+            apps/app/coverage
+            packages/ui/coverage
+          retention-days: 7
 
   e2e:
     name: E2E (Playwright)
     runs-on: ubuntu-latest
+    # Postgres para o E2E do caminho crítico (`auth-flow.spec.ts`): ele sobe a
+    # API de verdade contra este banco e faz cadastro → dashboard sem mock.
+    # Aqui o banco é um serviço do runner, então não usamos o
+    # `docker-compose.test.yml` (que é o caminho local, via `pnpm test:e2e`).
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: boilerplate_e2e
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/boilerplate_e2e?schema=public
     steps:
       - uses: actions/checkout@v4
 
@@ -103,9 +138,21 @@ jobs:
       - name: Instalar browser do Playwright
         run: pnpm --filter app exec playwright install --with-deps chromium
 
-      # O webServer do Playwright sobe o Vite; com a API fora, o login renderiza.
-      - name: Rodar E2E
-        run: pnpm test:e2e
+      # A API do E2E roda via tsx contra o Prisma Client, que precisa existir.
+      - name: Gerar Prisma Client
+        run: pnpm db:generate
+
+      - name: Aplicar migrations (DB do E2E)
+        run: pnpm --filter @repo/database exec prisma migrate deploy
+        env:
+          DATABASE_URL: ${{ env.TEST_DATABASE_URL }}
+
+      # Com `TEST_DATABASE_URL` presente, o webServer do Playwright sobe **API +
+      # Vite** e o `auth-flow.spec.ts` roda o caminho crítico de verdade. Não
+      # usamos o `pnpm test:e2e` da raiz aqui: ele criaria um Postgres via
+      # docker compose, e o runner já oferece um como serviço.
+      - name: Rodar E2E (stack completa)
+        run: pnpm --filter @repo/app test:e2e
 
       - name: Upload do relatório (em falha)
         uses: actions/upload-artifact@v4

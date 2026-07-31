@@ -9,7 +9,10 @@
     "preview": "vite preview",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
-    "start": "serve -s dist -l tcp://0.0.0.0:${PORT:-3000}"
+    "start": "serve -s dist -l tcp://0.0.0.0:${PORT:-3000}",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
@@ -37,12 +40,17 @@
   "devDependencies": {
     "@playwright/test": "^1.60.0",
     "@repo/typescript-config": "workspace:*",
+    "@repo/vitest-config": "workspace:*",
     "@tanstack/router-plugin": "^1.159.4",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
     "@types/react": "^19.2.10",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^4.3.4",
     "tailwindcss": "^4.1.18",
     "typescript": "5.5.4",
-    "vite": "^5.1.4"
+    "vite": "^5.1.4",
+    "vitest": "^3.2.4"
   }
 }

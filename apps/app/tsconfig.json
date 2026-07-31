@@ -1,6 +1,9 @@
 {
   "extends": "@repo/typescript-config/vite.json",
-  "include": ["src"],
+  // `test` entra no programa junto de `src`: o `pnpm build` roda `tsc` antes do
+  // bundle, então incluir os testes aqui é o que faz o CI reprovar um teste mal
+  // tipado. Fora do include, eles só seriam checados pelo editor.
+  "include": ["src", "test"],
   "compilerOptions": {
     "jsx": "react-jsx",
     "paths": {

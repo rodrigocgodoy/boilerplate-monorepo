@@ -1,79 +1,172 @@
 # Testes
 
-Fundação de testes do monorepo: **Vitest** (unit + integração) e **Playwright**
-(E2E). Cada package roda seus testes via Turborepo.
+Suíte do monorepo: **Vitest** (unit + integração) e **Playwright** (E2E), com
+configuração compartilhada em `packages/vitest-config` e um banco de teste
+efêmero que sobe e desce sozinho.
 
 ## Comandos
 
 ```bash
-pnpm test            # roda todos os Vitest (turbo run test, com cache + ^build)
-pnpm test:e2e        # roda os testes E2E (Playwright) do app
+pnpm test              # Vitest em todos os workspaces (sem infra; integração se pula)
+pnpm test:watch        # modo watch
+pnpm test:coverage     # com relatório de cobertura
 
-# por package
-pnpm --filter @repo/api test          # integração + unit da API
-pnpm --filter @repo/ui  test          # componentes (jsdom)
-pnpm --filter @repo/api test:watch    # modo watch
+pnpm test:db           # sobe Postgres efêmero → migrations → suíte COMPLETA → derruba
+pnpm test:db:coverage  # idem, com cobertura
+
+pnpm test:e2e          # E2E completo: Postgres + API + app, sem mock
+pnpm test:e2e:smoke    # só os specs que mockam a API (rápido, sem Docker)
+
+# por workspace
+pnpm --filter @repo/api test
+pnpm --filter @repo/app test
+pnpm --filter @repo/ui  test
 
 # primeira vez (baixa o browser do Playwright)
-pnpm --filter app exec playwright install chromium
-pnpm --filter app test:e2e:ui         # runner visual do Playwright
+pnpm --filter @repo/app exec playwright install chromium
+pnpm --filter @repo/app test:e2e:ui    # runner visual
 ```
 
-## O que já está coberto
+> `pnpm test` **não** precisa de Docker: sem banco, os `*.int.test.ts` se pulam
+> e a suíte segue com os unitários. `pnpm test:db` é o comando que roda tudo.
+
+## O que está coberto
 
 | Onde | Tipo | Cobre |
 |------|------|-------|
-| `apps/api/test/*.test.ts` | integração (`app.inject`) + unit | guards das rotas (401/402/403/503), HMAC do webhook, jobIds idempotentes, quota/escopos/categorias (funções puras) |
-| `apps/api/test/*.int.test.ts` | **integração com banco** | fluxos com Postgres real: entitlements (consumo/limite/seats), audit (record/list), notifications (notify/preferências), api-keys (create→verify→revoke), export LGPD |
-| `packages/ui/test/button.test.tsx` | componente (jsdom) | render, clique e estado disabled do `Button` |
-| `apps/app/e2e/login.spec.ts` | E2E (Playwright) | a tela de login renderiza |
+| `apps/api/test/*.test.ts` | integração (`app.inject`) + unit | `GET /me` (401, i18n do erro), guards das rotas (401/402/403/503), HMAC do webhook, jobIds idempotentes, quota/escopos/categorias |
+| `apps/api/test/auth-flow.int.test.ts` | **integração com banco** | cadastro → sessão → `GET /me` 200 → logout → 401, senha errada, e-mail duplicado |
+| `apps/api/test/*.int.test.ts` | **integração com banco** | entitlements, audit, notifications, api-keys, export LGPD |
+| `apps/app/test/login-form.test.tsx` | componente (jsdom) | validação Zod, payload enviado ao Better Auth, toast de erro, aba de cadastro |
+| `apps/app/test/dashboard.test.tsx` | componente (jsdom) | dados do `useGetMe`, skeleton, sessão expirada, badge de não lidas, logout |
+| `packages/ui/test/*.test.tsx` | componente (jsdom) | render, acessibilidade e composição (`asChild`) dos primitivos |
+| `apps/app/e2e/auth-flow.spec.ts` | **E2E real** | caminho crítico ponta a ponta, sem mock nenhum |
+| `apps/app/e2e/login.spec.ts` | E2E (API mockada) | login, `?redirect=`, fluxo de "esqueci a senha" |
 
 ## Como funciona
 
-- **Vitest por package:** cada um tem seu `vitest.config.ts`. A API usa
-  `environment: 'node'`; `@repo/ui` usa `jsdom` + `@testing-library/react`.
-  O alias `@/*` é resolvido no config da API (igual ao tsconfig).
-- **Integração da API sem porta:** `apps/api/test/helpers/build-app.ts` registra
-  o `backendPlugin` num Fastify e os testes usam `app.inject()`. **Não conecta
-  no banco** ao subir (o Pool do Prisma é lazy), então esses testes não precisam
-  de Postgres — cobrem os caminhos que respondem antes de qualquer query.
-- **Env hermético:** o `vitest.config.ts` da API define `test.env` (secrets de
-  teste, `DATABASE_URL` dummy), então os testes não dependem do seu `.env`.
-- **Testes de integração com banco (`*.int.test.ts`):** rodam **só quando
-  `TEST_DATABASE_URL` está setado** — senão, `describeDb` (= `describe.skip`) os
-  pula e o `pnpm test` segue só com os unitários (continua funcionando sem
-  infra). Quando há banco, o config aponta o `DATABASE_URL` para ele e desliga o
-  paralelismo de arquivos (`fileParallelism: false`) — eles compartilham o mesmo
-  Postgres e o `resetDb()` (TRUNCATE … CASCADE no `beforeEach`) de um arquivo não
-  pode apagar dados de outro. Fixtures (`createUser`/`createOrg`/`createPlan`) e
-  helpers ficam em `test/helpers/db.ts`. **No CI**, o job `quality` sobe um
-  Postgres, roda `migrate deploy` e seta `TEST_DATABASE_URL` — então a integração
-  roda a cada PR.
+### Configuração compartilhada (`packages/vitest-config`)
 
-**Rodar a integração localmente** (não toca no banco de dev — use um separado):
+Três presets, para não repetir config em cada workspace:
 
-```bash
-docker exec boilerplate-postgres psql -U postgres -c 'CREATE DATABASE boilerplate_test;'
-DATABASE_URL='postgresql://postgres:postgres@localhost:5432/boilerplate_test?schema=public' \
-  pnpm --filter @repo/database exec prisma migrate deploy
-TEST_DATABASE_URL='postgresql://postgres:postgres@localhost:5432/boilerplate_test?schema=public' \
-  pnpm --filter @repo/api test
-```
-- **Turbo:** o task `test` tem `dependsOn: ["^build"]` porque `@repo/database`
-  é consumido como `dist` (precisa estar buildado).
-- **Playwright:** sobe o dev server do app (`webServer`) e testa no Chromium.
-  Seletores por `id` (`#signin-email`) são estáveis entre idiomas.
+- **`base`** — `clearMocks`/`restoreMocks` e as opções de cobertura (provider
+  **v8**: nativo do Node, sem instrumentar o bundle).
+- **`node`** — `apps/api`. Ambiente Node, sem DOM.
+- **`react`** — `apps/app` e `packages/ui`. jsdom, plugin do React, matchers do
+  jest-dom e `cleanup()` entre testes.
 
-## Próximos passos (não incluídos nesta fundação)
+Cada workspace só declara o que é dele (aliases, env) via `mergeConfig`.
 
-- **E2E autenticado** (login → dashboard → checkout): suba a stack completa
-  (`pnpm dev` na raiz: API + Postgres + app) e crie um usuário via API no
-  `beforeAll` (ou um storage state de sessão reaproveitável).
-- **Cobertura:** `vitest run --coverage` (adicione `@vitest/coverage-v8`).
+> O pacote é consumido como **fonte** pelo carregador de config do Vite, que
+> externaliza workspaces e os carrega como ESM nativo. Por isso os imports
+> internos dele levam extensão (`./base.ts`).
+>
+> Os matchers do jest-dom são importados no setup compartilhado, mas cada
+> workspace de UI mantém um `test/matchers.d.ts` de uma linha — o setup está
+> fora do programa do TypeScript local, e sem essa âncora o `tsc` não enxerga a
+> augmentação do `expect`.
+
+### Banco de teste efêmero
+
+`docker-compose.test.yml` sobe um Postgres isolado do de desenvolvimento em três
+eixos: container próprio, porta própria (**55432**, sobrescrevível com
+`TEST_DB_PORT`) e **sem volume** — os dados vivem em `tmpfs`, então morrem com o
+container. Nenhum teste alcança o banco de dev por acidente.
+
+`scripts/test-db.ts` orquestra: `up --wait` → `migrate deploy` → o comando →
+teardown num `finally` (e em `SIGINT`). O teardown é o ponto do script: um
+container órfão faria o próximo teste herdar dados do anterior, que é o tipo de
+flakiness que só aparece na segunda execução.
+
+### Integração da API
+
+- **Sem porta:** `test/helpers/build-app.ts` registra o `backendPlugin` num
+  Fastify e os testes usam `app.inject()`.
+- **DB-free por padrão:** o Pool do Prisma é lazy, então os testes que respondem
+  antes de qualquer query (401, 503, validação) não precisam de Postgres.
+- **Com banco (`*.int.test.ts`):** rodam só com `TEST_DATABASE_URL` setado —
+  senão `describeDb` (= `describe.skip`) os pula. O `fileParallelism` desliga
+  nesse modo: os arquivos compartilham o mesmo Postgres e o `resetDb()`
+  (TRUNCATE … CASCADE) de um não pode apagar os dados de outro no meio do teste.
+- **Env hermético:** o `vitest.config.ts` define `test.env`, então a suíte não
+  depende do seu `.env`.
+
+> **Pegadinha do Turbo:** ele roda as tasks com um env **filtrado**. Variável
+> não declarada em `turbo.json` não chega no Vitest — e a integração se auto-pula
+> em silêncio, deixando a suíte verde sem ter tocado no banco. Por isso as tasks
+> `test`/`test:coverage`/`test:watch` declaram `TEST_DATABASE_URL`. Se você criar
+> uma task de teste nova, declare também.
+
+### E2E
+
+Dois modos, escolhidos pela presença de `TEST_DATABASE_URL`:
+
+- **smoke** (`pnpm test:e2e:smoke`) — só o Vite; os specs interceptam as chamadas
+  do Better Auth. Rápido e sem Docker, mas prova só o que o front faz sozinho.
+- **completo** (`pnpm test:e2e`) — Postgres efêmero + **API real** + app. O
+  `auth-flow.spec.ts` cria conta, cai no dashboard e confere os dados vindos do
+  `GET /me`. Se ele passa, o fluxo Zod → OpenAPI → Kubb → React está inteiro.
+
+A readiness da API é o próprio `/health` (que consulta o banco), não a porta
+aberta — assim o Playwright só começa quando a stack inteira responde.
+
+Seletores por `id` (`#signin-email`) são estáveis entre idiomas. No E2E real,
+prefira escopar (ex.: o `<dl>` do dashboard): o nome do usuário também aparece no
+seletor de organização, e um seletor amplo passaria sem provar nada.
+
+## Cobertura
+
+`pnpm test:coverage` (ou `pnpm test:db:coverage` para incluir a integração).
+Relatórios em `<workspace>/coverage` — `text` no terminal, `html` para inspecionar
+e `lcov` para o CI, que sobe tudo como artefato.
+
+Com a suíte completa (banco incluído):
+
+| Workspace | Statements | Branches |
+|-----------|-----------|----------|
+| `@repo/api` | ~59% | ~63% |
+| `@repo/ui` | ~31% | ~80% |
+| `@repo/app` | ~14% | ~35% |
+
+O número global é **deliberadamente baixo** e não deve ser perseguido. A
+cobertura usa `all: true`, ou seja, conta todo arquivo do workspace, inclusive
+telas inteiras que ninguém testa (o `/admin` sozinho tem 466 linhas). Um número
+alto viria de testar telas CRUD triviais, não de reduzir risco.
+
+O que interessa é o caminho crítico, e ele está coberto:
+
+| Arquivo | Statements |
+|---------|-----------|
+| `routes/_app/dashboard.tsx` | 97% |
+| `modules/me/route.ts` | 87% |
+| `components/auth/login-form.tsx` | 85% |
+| `utils/environment.ts` | 97% |
 
 ## Adicionando testes a um novo package
 
-1. `pnpm --filter <pkg> add -D vitest` (o override fixa a versão 3.x compatível
-   com o Vite 5).
-2. Crie `vitest.config.ts` (copie o de `@repo/api` ou `@repo/ui`).
-3. Adicione `"test": "vitest run"` aos scripts — o `pnpm test` da raiz já o pega.
+1. `pnpm --filter <pkg> add -D vitest @repo/vitest-config`
+2. Crie o `vitest.config.ts`:
+   ```ts
+   import { nodeConfig } from '@repo/vitest-config/node' // ou /react
+   export default nodeConfig
+   ```
+   Precisa de alias ou env? Componha com `mergeConfig` (veja `apps/api`).
+3. Adicione `"test": "vitest run"`, `"test:watch": "vitest"` e
+   `"test:coverage": "vitest run --coverage"` aos scripts — o `pnpm test` da raiz
+   já os pega via Turbo.
+
+## Achados registrados como teste
+
+- **`cookieCache` sobrevive ao logout.** `session.cookieCache` está ligado
+  (5 min) em `better-auth/configs.ts`: nesse intervalo a sessão é validada por um
+  cookie assinado, **sem consultar o banco**. Um token capturado antes do logout
+  continua valendo até o cache expirar. O browser normal não é afetado (o logout
+  apaga os cookies dele), e a troca — uma query a menos por request — é
+  legítima. `auth-flow.int.test.ts` registra isso explicitamente para que a
+  propriedade seja visível e qualquer mudança apareça no diff.
+
+## Próximos passos
+
+- E2E autenticado das telas de billing/admin (o `auth-flow.spec.ts` já dá o
+  molde: cadastro real e navegação a partir dali).
+- `--affected` do Turbo para rodar só o que mudou nos PRs.

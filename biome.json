@@ -13,6 +13,9 @@
       "!**/pnpm-lock.yaml",
       "!**/database/generated",
       "!**/gen",
+      "!**/coverage",
+      "!**/playwright-report",
+      "!**/test-results",
       "!**/routeTree.gen.ts",
       "!**/.agents",
       "!**/.claude"
