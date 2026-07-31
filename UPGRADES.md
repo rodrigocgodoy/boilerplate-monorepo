@@ -646,6 +646,34 @@ preencha `SENTRY_DSN` / `VITE_SENTRY_DSN`. Sem DSN, nada inicializa.
   qual deploy quebrou.
 - **Amostragem:** `SENTRY_TRACES_SAMPLE_RATE` (0..1, default 0 = só erros).
 
+### Session Replay
+
+O vídeo do que o usuário fez antes do erro, anexado ao evento no Sentry.
+
+Configurado para gravar **só quando há exceção** (`replaysOnErrorSampleRate: 1`,
+`replaysSessionSampleRate: 0`): o SDK mantém um buffer curto em memória e o
+envia se algo quebrar. Fora isso, nada sai.
+
+> **Por que não sempre ligado:** o boilerplate já tem replay de sessão pelo
+> PostHog, que é ferramenta de **produto** (comportamento, funil, onde travou).
+> O do Sentry é ferramenta de **erro** — vale por estar colado à exceção.
+> Deixar os dois gravando o tempo todo é pagar duas vezes pela mesma coisa e
+> colocar dois observadores no mesmo DOM. Assim eles se complementam.
+>
+> Para usar o Sentry também para comportamento, suba
+> `VITE_SENTRY_REPLAY_SESSION_SAMPLE_RATE` — e considere desligar o replay do
+> PostHog no painel.
+
+**Privacidade:** `maskAllText`, `maskAllInputs` e `blockAllMedia` ligados. Um
+replay que capturasse campo de senha ou dado pessoal jogaria fora a disciplina
+de redaction do log e do `beforeSend`. A máscara preserva a estrutura da tela
+(dá para ver onde clicou, o que travou) sem enviar conteúdo. Para liberar um
+elemento específico, use `data-sentry-unmask`.
+
+**Custo:** +41 KB gzip no bundle (307 → 349 KB, medido). Se isso pesar, o Sentry
+oferece `lazyLoadIntegration`, que busca o replay do CDN deles sob demanda — em
+troca de uma dependência de runtime externa.
+
 ### Source maps
 
 Gerados nos dois builds: `sourceMap: true` no `tsc` da API (com
@@ -667,6 +695,60 @@ npx @sentry/cli sourcemaps upload --org SUA_ORG --project SEU_PROJ \
 > usa Sentry e exigiria um token de auth em build time. Se você usa Sentry a
 > sério e quer o upload automático no build, o plugin é a escolha certa —
 > instale-o e configure com a mesma release.
+
+### Exportar traces para um backend não-Sentry (OTLP)
+
+O `@sentry/node` v10 é **construído sobre OpenTelemetry** — as dependências dele
+incluem `@opentelemetry/sdk-trace-base` e `@opentelemetry/instrumentation`. Na
+prática, a sua API **já produz spans OTel** a cada request, query do Prisma e
+chamada HTTP de saída. O que existe hoje é um destino só: o Sentry.
+
+**OpenTelemetry** é um padrão aberto (CNCF) que define como um trace é
+representado e por qual protocolo viaja (OTLP). Não é um produto — quem
+armazena e mostra é o backend que você escolher: Grafana Tempo, Jaeger,
+Honeycomb, Datadog, Axiom, ou um OTel Collector distribuindo para vários.
+
+```
+Fastify/Prisma/HTTP → spans OTel ─┬→ Sentry            (hoje)
+                                  └→ backend via OTLP  (opt-in)
+```
+
+**Quando vale:** você não quer ficar preso ao Sentry para performance; a empresa
+já tem Grafana ou Datadog e quer tudo num lugar; o custo por transação do Sentry
+incomoda; precisa reter trace por mais tempo do que o plano permite.
+
+**Quando não vale:** é mais um serviço para operar, e o Sentry já entrega trace
+distribuído. Sem volume que justifique, é complexidade sem retorno — por isso
+**não vem ligado**.
+
+**Como ligar:**
+
+1. Instale o exporter e o SDK:
+   ```bash
+   pnpm --filter @repo/api add @opentelemetry/sdk-node \
+     @opentelemetry/exporter-trace-otlp-http
+   ```
+2. Em `apps/api/src/instrument.ts`, **depois** do `Sentry.init`, registre um
+   span processor adicional apontando para o seu coletor:
+   ```ts
+   import { NodeSDK } from '@opentelemetry/sdk-node'
+   import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http'
+
+   if (process.env.OTEL_EXPORTER_OTLP_ENDPOINT) {
+     new NodeSDK({
+       traceExporter: new OTLPTraceExporter({
+         url: `${process.env.OTEL_EXPORTER_OTLP_ENDPOINT}/v1/traces`,
+       }),
+       // Sem `instrumentations`: o SDK do Sentry já instrumentou tudo, e
+       // registrar de novo produziria spans duplicados.
+     }).start()
+   }
+   ```
+3. Adicione `OTEL_EXPORTER_OTLP_ENDPOINT` ao schema em `packages/env` e ao
+   `.env.example`.
+
+**Atenção:** não registre as instrumentações duas vezes. O ganho aqui é só
+mudar/duplicar o **destino** — a instrumentação já está feita pelo Sentry.
 
 ### Health e readiness
 

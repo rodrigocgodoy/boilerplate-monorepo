@@ -59,7 +59,26 @@ ENV VITE_API_URL=$VITE_API_URL \
 # `prisma generate` roda na cadeia de build do @repo/database (dep do api-client
 # via @repo/api); não conecta em build time.
 ENV DATABASE_URL=postgresql://build:build@localhost:5432/build
-RUN pnpm build --filter=@repo/app
+
+# Upload dos source maps ao Sentry (opcional).
+#
+# O token vai por **secret do BuildKit**, não por `ARG`: build args ficam
+# gravados no histórico da imagem (`docker history` os mostra), e o
+# SENTRY_AUTH_TOKEN dá acesso de escrita ao projeto. Secret é montado só durante
+# o RUN e não entra em camada nenhuma.
+#
+#   docker build -f apps/app/Dockerfile \
+#     --secret id=sentry_token,env=SENTRY_AUTH_TOKEN \
+#     --build-arg SENTRY_ORG=sua-org --build-arg SENTRY_PROJECT=seu-proj .
+#
+# Sem o secret, o plugin é no-op e o build segue normalmente.
+ARG SENTRY_ORG=
+ARG SENTRY_PROJECT=
+ENV SENTRY_ORG=$SENTRY_ORG \
+    SENTRY_PROJECT=$SENTRY_PROJECT
+RUN --mount=type=secret,id=sentry_token,required=false \
+    SENTRY_AUTH_TOKEN="$(cat /run/secrets/sentry_token 2>/dev/null || true)" \
+    pnpm build --filter=@repo/app
 
 # ── Runtime: nginx ───────────────────────────────────────────────────────────
 # O resultado do build é HTML/CSS/JS estático — não há Node em runtime. nginx

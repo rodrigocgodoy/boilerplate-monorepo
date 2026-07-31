@@ -188,6 +188,8 @@ Guia completo em [`UPGRADES.md`](./UPGRADES.md). As decisões que valem explicar
 
 **Liveness e readiness são rotas diferentes.** `/health` responde "o processo está são?" e não toca em dependência alguma; `/ready` responde "posso receber tráfego?" e verifica Postgres e Redis. Misturar as duas faz uma queda de banco de 30 segundos virar uma frota inteira em crash loop — e reiniciar não traz banco de volta.
 
+**Session Replay só quando quebra.** O Sentry grava o vídeo dos segundos anteriores a uma exceção e o anexa ao evento; sessões sem erro não são gravadas. O replay de produto — comportamento, funil — continua com o PostHog, que já fazia isso. Deixar os dois gravando o tempo todo seria pagar duas vezes e colocar dois observadores no mesmo DOM. Texto, campos e mídia entram mascarados, senão o replay desfaria a redaction do log.
+
 **Source maps gerados, não publicados.** O Vite usa `sourcemap: 'hidden'`: os `.map` existem para o Sentry desminificar, mas não são referenciados pelo bundle nem servidos pela imagem. Publicá-los entregaria o código-fonte a qualquer visitante.
 
 ---

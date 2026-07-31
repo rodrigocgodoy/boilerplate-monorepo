@@ -21,8 +21,37 @@ export function initObservability(): void {
     // Precisa bater com a release usada no upload dos source maps, senão o
     // Sentry mostra o stack trace minificado — que é o mesmo que nada.
     release: env.VITE_SENTRY_RELEASE || undefined,
-    integrations: [Sentry.browserTracingIntegration()],
+    integrations: [
+      Sentry.browserTracingIntegration(),
+      // Session Replay — o vídeo do que o usuário fez antes do erro.
+      //
+      // Privacidade primeiro: `maskAllText` e `blockAllMedia` ligados. Um
+      // replay que capturasse campo de senha, e-mail ou dado de cartão jogaria
+      // fora toda a disciplina de redaction do log e do `beforeSend`. Máscara
+      // preserva a estrutura da tela (dá para ver onde clicou, o que travou)
+      // sem enviar o conteúdo. Libere caso a caso com `data-sentry-unmask`.
+      Sentry.replayIntegration({
+        maskAllText: true,
+        maskAllInputs: true,
+        blockAllMedia: true,
+      }),
+    ],
     tracesSampleRate: env.VITE_SENTRY_TRACES_SAMPLE_RATE,
+
+    // Grava **só quando há erro**: o SDK mantém um buffer curto em memória e o
+    // envia se uma exceção acontecer. Fora isso, nada sai.
+    //
+    // O boilerplate já tem replay de sessão pelo PostHog (#15), que é
+    // ferramenta de produto — entender comportamento e funil. O do Sentry é
+    // ferramenta de erro: fica anexado ao evento, então dá para ver a exceção
+    // e o vídeo lado a lado. Deixar os dois gravando o tempo todo seria pagar
+    // duas vezes pela mesma coisa; assim eles se complementam.
+    replaysOnErrorSampleRate: 1.0,
+    // Amostragem de sessões *sem* erro. 0 = desligado (default). Suba se quiser
+    // usar o Sentry também para comportamento — e aí considere desligar o
+    // replay do PostHog para não ter dois gravadores no mesmo DOM.
+    replaysSessionSampleRate: env.VITE_SENTRY_REPLAY_SESSION_SAMPLE_RATE,
+
     sendDefaultPii: false,
     beforeSend(event) {
       // O front não deveria anexar segredo a evento nenhum, mas a URL entra
