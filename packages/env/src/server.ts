@@ -105,6 +105,10 @@ export const serverEnvSchema = z.object({
   SENTRY_DSN: z.string().default(''),
   // Ambiente reportado ao Sentry; vazio = usa ENV.
   SENTRY_ENVIRONMENT: z.string().default(''),
+  // Release tracking: liga cada erro à versão que o produziu. Injete o SHA do
+  // commit no deploy (`SENTRY_RELEASE=$(git rev-parse HEAD)`). Vazio = todos os
+  // erros caem numa release só, e some a informação de qual deploy quebrou.
+  SENTRY_RELEASE: z.string().default(''),
   // Amostragem de traces (0..1). 0 = sem performance/tracing (só erros).
   SENTRY_TRACES_SAMPLE_RATE: z.coerce.number().min(0).max(1).default(0),
   // Upload de arquivos (S3/MinIO) — opcional. Sem `S3_BUCKET`+credenciais, as

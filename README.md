@@ -176,6 +176,22 @@ Fila BullMQ sobre Redis, com worker que escala separado da API. Guia completo em
 
 ---
 
+## Observabilidade
+
+Guia completo em [`UPGRADES.md`](./UPGRADES.md). As decisões que valem explicar:
+
+**Redaction não é opcional.** `authorization`, `cookie`, `set-cookie`, `x-api-key` e qualquer `password`/`token`/`secret`/`otp` viram `[REDACTED]`, em qualquer profundidade — no log e também no que vai para o Sentry, que é um destino de terceiro com mais gente com acesso. Log fica meses retido e é lido por quem não precisaria daquele dado; um `authorization` ali é credencial válida em texto puro, e o cookie de sessão permite personificar o usuário sem nem expirar quando ele troca a senha.
+
+**Pino configurado, não substituído.** Ele já é o logger nativo do Fastify. A mesma configuração vale para a API e para o worker: dois formatos de log obrigam o agregador a ter dois parsers, e metade dos campos acaba não indexada. O worker antes usava `console.info` — texto solto, sem nível, sem timestamp e sem redaction, num processo que manipula payload de e-mail.
+
+**Três identificadores que se encontram.** O `requestId` liga cliente ↔ log (vai no header e no corpo dos erros), o `trace_id` liga log ↔ Sentry, e o `jobId` liga request ↔ worker. Sem eles, um erro no Sentry não tem como puxar o que o servidor registrou naquela request.
+
+**Liveness e readiness são rotas diferentes.** `/health` responde "o processo está são?" e não toca em dependência alguma; `/ready` responde "posso receber tráfego?" e verifica Postgres e Redis. Misturar as duas faz uma queda de banco de 30 segundos virar uma frota inteira em crash loop — e reiniciar não traz banco de volta.
+
+**Source maps gerados, não publicados.** O Vite usa `sourcemap: 'hidden'`: os `.map` existem para o Sentry desminificar, mas não são referenciados pelo bundle nem servidos pela imagem. Publicá-los entregaria o código-fonte a qualquer visitante.
+
+---
+
 ## Deploy
 
 ```bash

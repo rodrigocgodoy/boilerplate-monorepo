@@ -70,6 +70,12 @@ FROM nginx:1.27-alpine AS app
 COPY apps/app/nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=builder /app/apps/app/dist /usr/share/nginx/html
 
+# Os `.map` são gerados como `hidden` (sem referência no bundle) para o upload
+# ao Sentry, mas não podem ser servidos: publicá-los entrega o código-fonte
+# original a qualquer visitante. Faça o upload a partir do artefato de build,
+# não da imagem.
+RUN find /usr/share/nginx/html -name '*.map' -delete
+
 # Usuário não-root: a imagem oficial já traz o usuário `nginx`. Os diretórios de
 # escrita precisam pertencer a ele, e o master process não pode tentar bindar
 # porta privilegiada — por isso a 8080 no conf.

@@ -3,6 +3,7 @@ import { createFileRoute, Outlet, redirect } from '@tanstack/react-router'
 import { useEffect } from 'react'
 import { identifyUser } from '@/analytics'
 import { ImpersonationBanner } from '@/components/impersonation-banner'
+import { setObservabilityUser } from '@/observability'
 
 export const Route = createFileRoute('/_app')({
   beforeLoad: async ({ context, location }) => {
@@ -44,13 +45,21 @@ function useEnsureActiveOrganization() {
   }, [orgs, active, orgsPending, activePending])
 }
 
-/** Identifica o usuário no PostHog quando a sessão está disponível. No-op
- * sem analytics. */
+/**
+ * Identifica o usuário no PostHog e no Sentry quando a sessão está disponível.
+ * No-op quando cada um está desligado.
+ *
+ * Os dois recebem coisas diferentes de propósito: o PostHog é ferramenta de
+ * produto e precisa de e-mail/nome para a análise fazer sentido; o Sentry
+ * recebe só o `id`, porque ali o objetivo é "quantos usuários esse erro
+ * atingiu" — e-mail em relatório de erro é dado pessoal sem contrapartida.
+ */
 function useAnalyticsIdentify() {
   const { data: session } = authClient.useSession()
   const user = session?.user
   useEffect(() => {
     if (user) identifyUser({ id: user.id, email: user.email, name: user.name })
+    setObservabilityUser(user?.id ?? null)
   }, [user])
 }
 

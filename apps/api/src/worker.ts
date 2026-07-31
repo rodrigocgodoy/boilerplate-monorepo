@@ -3,6 +3,7 @@ import './instrument.js'
 import closeWithGrace from 'close-with-grace'
 import { jobs } from './jobs/index.js'
 import { env } from './utils/environment.js'
+import { createWorkerLogger } from './utils/logger.js'
 
 /**
  * Worker de jobs dedicado (para escalar separado da API). Rode com
@@ -11,7 +12,10 @@ import { env } from './utils/environment.js'
  * Dev: `pnpm worker` · Produção: `node dist/worker.js`.
  */
 
-const logger = { info: console.info, error: console.error }
+// Pino com a mesma configuração da API — inclusive a redaction. Antes eram
+// `console.info`/`console.error`: texto solto, sem nível, sem timestamp e sem
+// redaction, num processo que manipula payloads de e-mail e webhook.
+const logger = createWorkerLogger()
 
 if (!env.REDIS_URL) {
   logger.info('[worker] REDIS_URL ausente — nada a processar. Ver UPGRADES.md.')
@@ -37,7 +41,7 @@ logger.info('[worker] pronto, aguardando jobs…')
 closeWithGrace(
   { delay: env.JOBS_SHUTDOWN_TIMEOUT_MS },
   async ({ err, signal }) => {
-    if (err) logger.error('[worker] erro ao encerrar', err)
+    if (err) logger.error({ err }, '[worker] erro ao encerrar')
     logger.info(
       `[worker] encerrando (${signal ?? 'sem sinal'}) — aguardando o job em andamento…`,
     )
