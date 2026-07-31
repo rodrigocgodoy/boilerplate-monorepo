@@ -1,8 +1,20 @@
 {
   "extends": "@repo/typescript-config/base.json",
   "compilerOptions": {
-    "outDir": "./dist",
-    "rootDir": "./src"
+    // `NodeNext` porque este pacote é carregado em runtime pelo Node. Na imagem
+    // de produção os workspaces viram diretórios reais dentro de node_modules, e
+    // ali o Node recusa type-stripping em `.ts` — o pacote precisa publicar JS.
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "outDir": "dist",
+    "rootDir": "src",
+    // Sem `.d.ts` emitido: os tipos vêm da própria fonte (ver `exports` no
+    // package.json). O client do Better Auth e o runner do BullMQ inferem tipos
+    // que apontam para `node_modules` aninhado, e o TS recusa emitir declaração
+    // não-portável (TS2742). Ler os tipos do source resolve sem perder nada:
+    // bundler e editor já leem TypeScript.
+    "declaration": false,
+    "declarationMap": false
   },
   "include": ["src/**/*.ts"],
   "exclude": ["node_modules", "dist"]
