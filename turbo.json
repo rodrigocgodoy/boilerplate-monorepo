@@ -17,18 +17,18 @@
       // auto-pulam — a suíte fica verde sem ter tocado no banco.
       // Declarar também faz parte da chave de cache, que é o correto: rodar
       // com e sem banco são execuções diferentes.
-      "env": ["TEST_DATABASE_URL", "DATABASE_URL", "CI"]
+      "env": ["TEST_DATABASE_URL", "TEST_REDIS_URL", "DATABASE_URL", "CI"]
     },
     "test:coverage": {
       "dependsOn": ["^build"],
       "outputs": ["coverage/**"],
-      "env": ["TEST_DATABASE_URL", "DATABASE_URL", "CI"]
+      "env": ["TEST_DATABASE_URL", "TEST_REDIS_URL", "DATABASE_URL", "CI"]
     },
     "test:watch": {
       "cache": false,
       "persistent": true,
       "dependsOn": ["^build"],
-      "env": ["TEST_DATABASE_URL", "DATABASE_URL", "CI"]
+      "env": ["TEST_DATABASE_URL", "TEST_REDIS_URL", "DATABASE_URL", "CI"]
     },
     "dev": {
       "cache": false,

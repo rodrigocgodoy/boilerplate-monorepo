@@ -6,37 +6,11 @@ import {
   sendSubscriptionEmail,
   sendVerificationEmail,
 } from '@repo/emails'
-
-/**
- * Payload do job `email` — union por template. Centraliza o envio para que
- * qualquer disparo passe pela fila (retries/backoff quando o Redis está ligado).
- */
-// `locale` (opcional) localiza o e-mail; ausente = fallback (pt-BR).
-export type EmailJob = { locale?: string } & (
-  | { template: 'verification'; to: string; name?: string; url: string }
-  | { template: 'reset'; to: string; name?: string; otp: string }
-  | {
-      template: 'invitation'
-      to: string
-      organizationName: string
-      inviterName?: string
-      url: string
-    }
-  | {
-      template: 'subscription'
-      to: string
-      organizationName: string
-      planName: string
-      status: 'active' | 'cancelled'
-    }
-  | {
-      template: 'notification'
-      to: string
-      title: string
-      body?: string
-      url?: string
-    }
-)
+import type {
+  BillingWebhookJob,
+  EmailJob,
+  SubscriptionWebhookJob,
+} from './schemas.js'
 
 async function handleEmail(job: EmailJob): Promise<void> {
   switch (job.template) {
@@ -94,12 +68,6 @@ export async function sweepExpiredTrials(now = new Date()): Promise<number> {
   return count
 }
 
-/** Payload do job `subscription-webhook`: o corpo do webhook do AbacatePay. */
-export type SubscriptionWebhookJob = {
-  event?: string
-  data?: Record<string, unknown>
-}
-
 /**
  * Processa o webhook de assinatura fora do request (async + com retries quando
  * há Redis). `handleWebhookEvent` é idempotente (upsert de pagamentos por
@@ -113,12 +81,6 @@ async function handleSubscriptionWebhook(
     '@/modules/subscription/service.js'
   )
   await new SubscriptionService().handleWebhookEvent(body)
-}
-
-/** Payload do job `billing-webhook`: o corpo do webhook de cobrança avulsa. */
-export type BillingWebhookJob = {
-  event?: string
-  data?: Record<string, unknown>
 }
 
 /**

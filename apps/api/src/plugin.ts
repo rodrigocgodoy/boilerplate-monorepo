@@ -15,6 +15,7 @@ import {
   validatorCompiler,
 } from 'fastify-type-provider-zod'
 import { jobs } from '@/jobs/index.js'
+import { registerQueueBoard } from '@/modules/queues/board.js'
 import { routesPlugin } from '@/routes.js'
 import { servicePlugin } from '@/services.js'
 import { env } from '@/utils/environment.js'
@@ -191,6 +192,11 @@ export const backendPlugin = tp(async app => {
       await jobs.stop()
     })
   }
+
+  // Bull Board (inspeção das filas) em /admin/queues, guardado pela role de
+  // plataforma. No-op sem REDIS_URL. Registrado antes das rotas por servir a
+  // própria árvore de assets, fora do OpenAPI/Kubb.
+  await registerQueueBoard(app)
 
   // Routes
   await app.register(routesPlugin)

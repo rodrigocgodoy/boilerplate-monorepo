@@ -7,6 +7,8 @@ import { defineConfig, mergeConfig } from 'vitest/config'
 // ele; senão se auto-pulam (`describe.skipIf`) e o `DATABASE_URL` fake nunca é
 // consultado. Ver TESTING.md.
 const testDbUrl = process.env.TEST_DATABASE_URL
+// Redis de teste: liga os testes de fila real (`*.queue.int.test.ts`).
+const testRedisUrl = process.env.TEST_REDIS_URL
 
 export default mergeConfig(
   nodeConfig,
@@ -20,7 +22,7 @@ export default mergeConfig(
       // mesmo Postgres e o `resetDb()` (TRUNCATE) de um arquivo não pode apagar
       // os dados de outro no meio do teste. Sem banco (só unitários), mantém o
       // paralelismo.
-      fileParallelism: !testDbUrl,
+      fileParallelism: !testDbUrl && !testRedisUrl,
       // Env hermético: não depende do .env real. A API não conecta no banco ao
       // subir (Pool é lazy); só rotas que consultam o DB precisariam dele.
       env: {
@@ -30,8 +32,9 @@ export default mergeConfig(
         BETTER_AUTH_URL: 'http://localhost:3333',
         APP_URL: 'http://localhost:5173',
         DATABASE_URL: testDbUrl || 'postgresql://test:test@localhost:5432/test',
-        // Repassado para os testes decidirem rodar (integração) ou pular.
+        // Repassados para os testes decidirem rodar (integração) ou pular.
         TEST_DATABASE_URL: testDbUrl || '',
+        TEST_REDIS_URL: testRedisUrl || '',
       },
     },
   }),

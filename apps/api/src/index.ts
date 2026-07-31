@@ -29,14 +29,20 @@ const app = fastify({
   genReqId: () => randomUUID(),
 })
 
-// Delay is the number of milliseconds for the graceful close to finish
-const closeListeners = closeWithGrace({ delay: 500 }, async ({ err }) => {
-  if (err) {
-    app.log.error(err)
-  }
+// `delay` é o orçamento TOTAL até o kill forçado, não uma folga extra. Com
+// `JOBS_IN_PROCESS=true` (default), o `app.close()` dispara o `onClose` que
+// para o worker de jobs — e o BullMQ espera o job ativo terminar. Meio segundo
+// não dá para isso: reusamos o mesmo teto do worker dedicado.
+const closeListeners = closeWithGrace(
+  { delay: env.JOBS_SHUTDOWN_TIMEOUT_MS },
+  async ({ err }) => {
+    if (err) {
+      app.log.error(err)
+    }
 
-  await app.close()
-})
+    await app.close()
+  },
+)
 
 // Cancelling the close listeners
 app.addHook('onClose', async () => {
