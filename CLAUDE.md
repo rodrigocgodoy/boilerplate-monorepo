@@ -41,6 +41,10 @@ CONVENTIONS é o contrato.
 **Slash commands** (`.claude/commands/`): `/new-module` (cria um módulo da API no
 padrão) e `/kubb-sync` (regenera o contrato depois de mexer em rota).
 
+**Commits em inglês**, no formato Conventional Commits (`feat(escopo): resumo no
+imperativo`). Comentários de código e strings de produto seguem em português —
+ver `CONVENTIONS.md` §9.1.
+
 **Regras importantes:**
 
 - Ao mudar/adicionar rota na API, rode `pnpm openapi && pnpm api-client` para
