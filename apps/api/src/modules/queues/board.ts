@@ -5,6 +5,7 @@ import { prisma } from '@repo/database'
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify'
 import { jobs } from '@/jobs/index.js'
 import { getAuthenticatedUserId } from '@/utils/auth.js'
+import { problem } from '@/utils/send-problem.js'
 
 /**
  * Bull Board — painel de inspeção das filas (jobs ativos, falhos, agendados e
@@ -63,7 +64,7 @@ export async function registerQueueBoard(app: FastifyInstance): Promise<void> {
           if (!userId || !(await isSystemAdmin(userId))) {
             // 404, e não 403: um painel de filas não precisa confirmar a
             // própria existência para quem não deveria alcançá-lo.
-            return reply.status(404).send({ error: 'Not found' })
+            return reply.status(404).send(problem(request, 404, 'Not found'))
           }
         },
       )

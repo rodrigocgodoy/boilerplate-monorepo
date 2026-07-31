@@ -66,6 +66,8 @@ export const es = {
     email: 'Email inválido',
     passwordMin: 'Mínimo de {{count}} caracteres',
     nameMin: 'Ingresa tu nombre',
+    invalidRequest: 'Solicitud inválida',
+    internalError: 'Error interno del servidor',
   },
   dashboard: {
     title: 'Panel',

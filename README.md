@@ -51,6 +51,7 @@ Por que cada peça está aqui, e o que foi descartado no caminho.
 | `packages/utils` | `auth-client` e resolução de URL da API |
 | `packages/biome-config` | Configuração de lint e formatação compartilhada |
 | `packages/typescript-config` | `tsconfig` base compartilhado |
+| `packages/env` | Schema Zod do ambiente, validado no boot (servidor e cliente) |
 | `packages/vitest-config` | Presets de teste compartilhados (`base`, `node`, `react`) |
 
 ---
@@ -172,6 +173,20 @@ Fila BullMQ sobre Redis, com worker que escala separado da API. Guia completo em
 **O painel usa a autenticação que já existe.** Bull Board em `/admin/queues`, atrás da mesma role de plataforma que guarda o `/admin`. Ele expõe payloads reais — e-mails, corpos de webhook, ids de usuário —, então merece o mesmo nível de proteção do resto da área administrativa, e não uma senha básica paralela que ninguém rotaciona. Quem não é admin recebe 404: o painel não confirma a própria existência.
 
 **O worker termina o que começou.** `stop()` fecha o worker sem `force`, e o teto de tempo é configurável (`JOBS_SHUTDOWN_TIMEOUT_MS`, default 30s) para caber na janela do orquestrador. Matar o processo no meio de um job devolve ele à fila: em handler idempotente isso é desperdício, nos demais é efeito duplicado.
+
+---
+
+## Segurança e ambiente
+
+**Configuração inválida derruba o boot, não o primeiro request.** `packages/env` valida tudo com Zod na subida — API, worker e app. Variável faltando descoberta em produção vira 500 intermitente difícil de rastrear; falhar imediatamente com o nome da variável custa segundos. A mensagem lista todos os problemas de uma vez (corrigir um por deploy é o pior jeito de achar os outros) e **omite o valor de variáveis sensíveis**, porque o log de boot costuma acabar num agregador.
+
+**`NODE_ENV` é verificado junto com `ENV`.** Bibliotecas de terceiros decidem o modo por `NODE_ENV`, não pela nossa variável. O caso concreto: o rate limit do Better Auth — 3 tentativas de login por 10 segundos — só liga com `NODE_ENV=production`. Subir com `ENV=production` e esquecer o outro deixava a proteção de força bruta desligada sem erro, sem log e sem sintoma até alguém abusar. Agora a API recusa subir.
+
+**CORS é uma lista explícita, vinda do env.** Antes era `origin: true`, que **reflete a origem da requisição**; combinado com `credentials: true`, isso autoriza qualquer site a chamar a API com o cookie de sessão do usuário logado. É pior que `*` — o browser bloqueia `*` com credenciais, mas aceita a origem refletida.
+
+**Rate limit por perfil, não um número só.** O teto global (100/min por IP) serve para a maioria, mas erra feio nos extremos: o webhook do gateway precisa de folga (429 num pico de reentrega descarta eventos de cobrança) e o export LGPD precisa de aperto (varre meia dúzia de tabelas por chamada). As rotas de autenticação não aparecem aqui porque o Better Auth já as limita, e mais. Com Redis, o contador é compartilhado entre réplicas — em memória, N réplicas viram N× o limite.
+
+**Erros seguem Problem Details (RFC 9457).** Existiam três formatos incompatíveis, e o pior era a validação: a API sabia exatamente qual campo o Zod reprovou e respondia `{"error":"Bad Request"}`, jogando o detalhe fora. Agora todo erro sai como `application/problem+json` com `type`/`title`/`status`/`detail`, mais `errors[{field, message}]` na validação e o `requestId` que liga a resposta ao log e ao Sentry. A escolha da RFC em vez de um formato próprio evita inventar vocabulário.
 
 ---
 

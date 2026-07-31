@@ -1,5 +1,6 @@
 import { getAuthSession } from '@/utils/auth.js'
 import { tp } from '@/utils/fastify.js'
+import { problem } from '@/utils/send-problem.js'
 import { isStorageEnabled } from './client.js'
 import {
   presignAvatarBodySchema,
@@ -35,18 +36,18 @@ export const storageRoute = tp(async scope => {
       if (!isStorageEnabled) {
         return reply
           .status(503)
-          .send({ error: request.t('storage:notConfigured') })
+          .send(problem(request, 503, request.t('storage:notConfigured')))
       }
       const session = await getAuthSession(scope, request)
       if (!session) {
         return reply
           .status(401)
-          .send({ error: request.t('payment:unauthorized') })
+          .send(problem(request, 401, request.t('payment:unauthorized')))
       }
       if (!storage.isAllowedAvatarType(request.body.contentType)) {
         return reply
           .status(400)
-          .send({ error: request.t('storage:invalidType') })
+          .send(problem(request, 400, request.t('storage:invalidType')))
       }
       const presign = await storage.presignAvatar(
         session.userId,

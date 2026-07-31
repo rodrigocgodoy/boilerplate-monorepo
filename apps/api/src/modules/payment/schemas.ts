@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { problemSchema } from '@/utils/problem.js'
 
 /** Status possíveis de uma cobrança (espelha o AbacatePay). */
 export const paymentStatusSchema = z.enum([
@@ -127,9 +128,11 @@ export const webhookResponseSchema = z.object({
   received: z.boolean(),
 })
 
-export const paymentErrorSchema = z.object({
-  error: z.string(),
-})
+/**
+ * Erros deste módulo seguem Problem Details (RFC 9457), igual ao resto da
+ * API. O alias mantém o nome já usado nas rotas. Ver `utils/problem.ts`.
+ */
+export const paymentErrorSchema = problemSchema
 
 export type CreatePixBody = z.infer<typeof createPixBodySchema>
 export type CreateCheckoutBody = z.infer<typeof createCheckoutBodySchema>

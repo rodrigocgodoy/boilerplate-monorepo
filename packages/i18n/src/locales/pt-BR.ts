@@ -66,6 +66,8 @@ export const ptBR = {
     passwordMin: 'Mínimo de {{count}} caracteres',
     nameMin: 'Informe seu nome',
     otp: 'Digite o código de 6 dígitos',
+    invalidRequest: 'Requisição inválida',
+    internalError: 'Erro interno do servidor',
   },
   dashboard: {
     title: 'Dashboard',

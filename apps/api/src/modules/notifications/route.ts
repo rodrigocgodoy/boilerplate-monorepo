@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { getAuthSession } from '@/utils/auth.js'
 import { tp } from '@/utils/fastify.js'
+import { problem } from '@/utils/send-problem.js'
 import {
   markReadResponseSchema,
   notificationErrorSchema,
@@ -35,7 +36,7 @@ export const notificationsRoute = tp(async scope => {
       if (!session) {
         return reply
           .status(401)
-          .send({ error: request.t('payment:unauthorized') })
+          .send(problem(request, 401, request.t('payment:unauthorized')))
       }
       const [items, unreadCount] = await Promise.all([
         notifications.list(session.userId),
@@ -75,7 +76,7 @@ export const notificationsRoute = tp(async scope => {
       if (!session) {
         return reply
           .status(401)
-          .send({ error: request.t('payment:unauthorized') })
+          .send(problem(request, 401, request.t('payment:unauthorized')))
       }
       const ok = await notifications.markRead(session.userId, request.params.id)
       const unreadCount = await notifications.unreadCount(session.userId)
@@ -101,7 +102,7 @@ export const notificationsRoute = tp(async scope => {
       if (!session) {
         return reply
           .status(401)
-          .send({ error: request.t('payment:unauthorized') })
+          .send(problem(request, 401, request.t('payment:unauthorized')))
       }
       await notifications.markAllRead(session.userId)
       return reply.status(200).send({ ok: true, unreadCount: 0 })
@@ -126,7 +127,7 @@ export const notificationsRoute = tp(async scope => {
       if (!session) {
         return reply
           .status(401)
-          .send({ error: request.t('payment:unauthorized') })
+          .send(problem(request, 401, request.t('payment:unauthorized')))
       }
       const preferences = await notifications.getPreferences(session.userId)
       return reply.status(200).send({ preferences })
@@ -152,7 +153,7 @@ export const notificationsRoute = tp(async scope => {
       if (!session) {
         return reply
           .status(401)
-          .send({ error: request.t('payment:unauthorized') })
+          .send(problem(request, 401, request.t('payment:unauthorized')))
       }
       const preferences = await notifications.setPreferences(
         session.userId,
@@ -180,7 +181,7 @@ export const notificationsRoute = tp(async scope => {
       if (!session) {
         return reply
           .status(401)
-          .send({ error: request.t('payment:unauthorized') })
+          .send(problem(request, 401, request.t('payment:unauthorized')))
       }
       await notifications.notify(session.userId, {
         category: 'system',
