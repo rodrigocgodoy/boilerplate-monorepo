@@ -17,7 +17,8 @@ jobs:
   quality:
     name: Lint · Types · Test · Build
     runs-on: ubuntu-latest
-    # Postgres para os testes de integração (gated por TEST_DATABASE_URL).
+    # Postgres e Redis para os testes de integração (gated por
+    # TEST_DATABASE_URL / TEST_REDIS_URL).
     services:
       postgres:
         image: postgres:16-alpine
@@ -29,6 +30,15 @@ jobs:
           - 5432:5432
         options: >-
           --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
@@ -79,6 +89,9 @@ jobs:
         run: pnpm test:coverage
         env:
           TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/boilerplate
+          # Liga os testes de fila real (`queue.int.test.ts`): BullMQ contra o
+          # Redis do job, com retry e DLQ de verdade.
+          TEST_REDIS_URL: redis://localhost:6379
 
       - name: Upload da cobertura
         uses: actions/upload-artifact@v4

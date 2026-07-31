@@ -21,7 +21,27 @@ if (!env.REDIS_URL) {
 await jobs.start(logger)
 logger.info('[worker] pronto, aguardando jobs…')
 
-closeWithGrace({ delay: 500 }, async ({ err }) => {
-  if (err) logger.error('[worker] erro ao encerrar', err)
-  await jobs.stop()
-})
+/**
+ * Shutdown gracioso.
+ *
+ * O `delay` do `close-with-grace` é o **orçamento total** até o kill forçado,
+ * não uma folga depois do handler. Com os 500 ms que estavam aqui, qualquer job
+ * mais lento que meio segundo — na prática todos: enviar e-mail, processar
+ * webhook — era interrompido no meio de um deploy. O job voltava para a fila e
+ * reprocessava; nos handlers idempotentes isso é desperdício, nos demais é
+ * efeito duplicado.
+ *
+ * `jobs.stop()` fecha o worker sem `force`, então o BullMQ espera o job ativo
+ * terminar. O teto existe para o caso de o job travar de vez.
+ */
+closeWithGrace(
+  { delay: env.JOBS_SHUTDOWN_TIMEOUT_MS },
+  async ({ err, signal }) => {
+    if (err) logger.error('[worker] erro ao encerrar', err)
+    logger.info(
+      `[worker] encerrando (${signal ?? 'sem sinal'}) — aguardando o job em andamento…`,
+    )
+    await jobs.stop()
+    logger.info('[worker] encerrado')
+  },
+)

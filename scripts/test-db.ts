@@ -2,9 +2,9 @@ import { spawnSync } from 'node:child_process'
 import process from 'node:process'
 
 /**
- * Sobe um Postgres **efêmero**, aplica as migrations, roda o comando recebido
- * com `TEST_DATABASE_URL` apontando pra ele e derruba tudo no fim — mesmo se o
- * comando falhar ou você der Ctrl+C.
+ * Sobe um Postgres e um Redis **efêmeros**, aplica as migrations, roda o
+ * comando recebido com `TEST_DATABASE_URL`/`TEST_REDIS_URL` apontando pra eles
+ * e derruba tudo no fim — mesmo se o comando falhar ou você der Ctrl+C.
  *
  * ```bash
  * pnpm test:db                       # a suíte inteira, integração incluída
@@ -17,9 +17,11 @@ import process from 'node:process'
  */
 
 const COMPOSE_FILE = 'docker-compose.test.yml'
-const SERVICE = 'postgres-test'
+const SERVICES = ['postgres-test', 'redis-test']
 const PORT = process.env.TEST_DB_PORT ?? '55432'
+const REDIS_PORT = process.env.TEST_REDIS_PORT ?? '56379'
 const DATABASE_URL = `postgresql://postgres:postgres@localhost:${PORT}/boilerplate_test?schema=public`
+const REDIS_URL = `redis://localhost:${REDIS_PORT}`
 
 /** Roda um comando herdando stdio; devolve o exit code. */
 function run(
@@ -43,12 +45,14 @@ const compose = (...args: string[]) =>
   run('docker', ['compose', '-f', COMPOSE_FILE, ...args])
 
 function up(): void {
-  console.info(`[test-db] subindo ${SERVICE} em localhost:${PORT}…`)
-  // `--wait` só retorna quando o healthcheck passa: sem isso, o migrate deploy
-  // corre antes do Postgres aceitar conexão.
-  if (compose('up', '-d', '--wait', SERVICE) !== 0) {
+  console.info(
+    `[test-db] subindo Postgres (localhost:${PORT}) e Redis (localhost:${REDIS_PORT})…`,
+  )
+  // `--wait` só retorna quando os healthchecks passam: sem isso, o migrate
+  // deploy corre antes do Postgres aceitar conexão.
+  if (compose('up', '-d', '--wait', ...SERVICES) !== 0) {
     throw new Error(
-      '[test-db] não consegui subir o Postgres de teste. O Docker está rodando?',
+      '[test-db] não consegui subir os serviços de teste. O Docker está rodando?',
     )
   }
 
@@ -62,7 +66,7 @@ function up(): void {
 }
 
 function down(): void {
-  console.info('[test-db] derrubando o banco de teste…')
+  console.info('[test-db] derrubando os serviços de teste…')
   // `-v` remove volumes anônimos; o tmpfs já morre com o container, mas isso
   // mantém o comando correto caso alguém troque o tmpfs por um volume.
   compose('down', '-v', '--remove-orphans')
@@ -97,6 +101,7 @@ try {
   exitCode = run(command, args, {
     TEST_DATABASE_URL: DATABASE_URL,
     DATABASE_URL,
+    TEST_REDIS_URL: REDIS_URL,
   })
 } catch (error) {
   console.error(error instanceof Error ? error.message : error)

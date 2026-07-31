@@ -37,6 +37,7 @@ pnpm --filter @repo/app test:e2e:ui    # runner visual
 | `apps/api/test/*.test.ts` | integração (`app.inject`) + unit | `GET /me` (401, i18n do erro), guards das rotas (401/402/403/503), HMAC do webhook, jobIds idempotentes, quota/escopos/categorias |
 | `apps/api/test/auth-flow.int.test.ts` | **integração com banco** | cadastro → sessão → `GET /me` 200 → logout → 401, senha errada, e-mail duplicado |
 | `apps/api/test/*.int.test.ts` | **integração com banco** | entitlements, audit, notifications, api-keys, export LGPD |
+| `apps/api/test/queue.int.test.ts` | **integração com Redis** | fila real: enfileirar→processar, retry com backoff, DLQ, replay, payload obsoleto e shutdown esperando o job ativo |
 | `apps/app/test/login-form.test.tsx` | componente (jsdom) | validação Zod, payload enviado ao Better Auth, toast de erro, aba de cadastro |
 | `apps/app/test/dashboard.test.tsx` | componente (jsdom) | dados do `useGetMe`, skeleton, sessão expirada, badge de não lidas, logout |
 | `packages/ui/test/*.test.tsx` | componente (jsdom) | render, acessibilidade e composição (`asChild`) dos primitivos |
@@ -68,10 +69,11 @@ Cada workspace só declara o que é dele (aliases, env) via `mergeConfig`.
 
 ### Banco de teste efêmero
 
-`docker-compose.test.yml` sobe um Postgres isolado do de desenvolvimento em três
-eixos: container próprio, porta própria (**55432**, sobrescrevível com
-`TEST_DB_PORT`) e **sem volume** — os dados vivem em `tmpfs`, então morrem com o
-container. Nenhum teste alcança o banco de dev por acidente.
+`docker-compose.test.yml` sobe um Postgres (**55432**) e um Redis (**56379**)
+isolados dos de desenvolvimento em três eixos: container próprio, porta própria
+(sobrescrevíveis com `TEST_DB_PORT` / `TEST_REDIS_PORT`) e **sem persistência** —
+o Postgres usa `tmpfs` e o Redis roda com `--save ''`. Nenhum teste alcança a
+infra de dev por acidente.
 
 `scripts/test-db.ts` orquestra: `up --wait` → `migrate deploy` → o comando →
 teardown num `finally` (e em `SIGINT`). O teardown é o ponto do script: um
@@ -84,6 +86,9 @@ flakiness que só aparece na segunda execução.
   Fastify e os testes usam `app.inject()`.
 - **DB-free por padrão:** o Pool do Prisma é lazy, então os testes que respondem
   antes de qualquer query (401, 503, validação) não precisam de Postgres.
+- **Com Redis (`queue.int.test.ts`):** roda só com `TEST_REDIS_URL` setado
+  (`describeQueue`). Cada teste usa um `queueName` único, então execuções
+  paralelas não disputam a mesma fila.
 - **Com banco (`*.int.test.ts`):** rodam só com `TEST_DATABASE_URL` setado —
   senão `describeDb` (= `describe.skip`) os pula. O `fileParallelism` desliga
   nesse modo: os arquivos compartilham o mesmo Postgres e o `resetDb()`
@@ -94,8 +99,8 @@ flakiness que só aparece na segunda execução.
 > **Pegadinha do Turbo:** ele roda as tasks com um env **filtrado**. Variável
 > não declarada em `turbo.json` não chega no Vitest — e a integração se auto-pula
 > em silêncio, deixando a suíte verde sem ter tocado no banco. Por isso as tasks
-> `test`/`test:coverage`/`test:watch` declaram `TEST_DATABASE_URL`. Se você criar
-> uma task de teste nova, declare também.
+> `test`/`test:coverage`/`test:watch` declaram `TEST_DATABASE_URL` e
+> `TEST_REDIS_URL`. Se você criar uma task de teste nova, declare também.
 
 ### E2E
 
@@ -164,6 +169,11 @@ O que interessa é o caminho crítico, e ele está coberto:
 
 ## Achados registrados como teste
 
+- **`stop()` do runner de jobs é idempotente.** A API chama `jobs.stop()` no hook
+  `onClose` enquanto o `closeWithGrace` também encerra o processo; sem a guarda,
+  o segundo `quit()` numa conexão já fechada lançava `Connection is closed` — e um
+  shutdown que estoura esconde o erro que causou o shutdown. `queue.int.test.ts`
+  fixa a propriedade.
 - **`cookieCache` sobrevive ao logout.** `session.cookieCache` está ligado
   (5 min) em `better-auth/configs.ts`: nesse intervalo a sessão é validada por um
   cookie assinado, **sem consultar o banco**. Um token capturado antes do logout
