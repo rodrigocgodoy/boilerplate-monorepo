@@ -1,7 +1,4 @@
-import {
-  useGetEntitlements,
-  usePostEntitlementsTrack,
-} from '@repo/api-client/hooks'
+import { useGetEntitlements, useTrackUsage } from '@repo/api-client/hooks'
 import { Badge } from '@repo/ui/components/badge'
 import { Button } from '@repo/ui/components/button'
 import {
@@ -34,7 +31,7 @@ const isMetered = (metric: string) => metric !== 'seats'
 export function PlanUsageCard() {
   const { t } = useTranslation('entitlements')
   const { data, refetch } = useGetEntitlements()
-  const track = usePostEntitlementsTrack()
+  const track = useTrackUsage()
 
   const usage = data?.data
   const metrics = (usage?.metrics ?? []) as Metric[]

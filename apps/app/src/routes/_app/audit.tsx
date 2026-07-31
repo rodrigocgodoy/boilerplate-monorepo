@@ -1,4 +1,4 @@
-import { useGetAudit } from '@repo/api-client/hooks'
+import { useListAuditLogs } from '@repo/api-client/hooks'
 import { Badge } from '@repo/ui/components/badge'
 import { Button } from '@repo/ui/components/button'
 import {
@@ -27,7 +27,7 @@ export const Route = createFileRoute('/_app/audit')({
 
 function AuditPage() {
   const { t, i18n } = useTranslation('audit')
-  const { data, isLoading } = useGetAudit()
+  const { data, isLoading } = useListAuditLogs()
   const { data: session } = authClient.useSession()
   const entries = data?.data.entries ?? []
 

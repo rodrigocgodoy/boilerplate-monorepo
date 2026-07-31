@@ -61,6 +61,7 @@ export const subscriptionRoute = tp(async scope => {
     {
       schema: {
         tags: ['Subscription'],
+        operationId: 'listPlans',
         summary: 'Lista os planos disponíveis',
         response: { 200: plansResponseSchema, 401: subscriptionErrorSchema },
       },
@@ -83,6 +84,7 @@ export const subscriptionRoute = tp(async scope => {
     {
       schema: {
         tags: ['Subscription'],
+        operationId: 'getSubscription',
         summary: 'Retorna a assinatura da organização ativa',
         response: {
           200: subscriptionResponseSchema,
@@ -120,6 +122,7 @@ export const subscriptionRoute = tp(async scope => {
     {
       schema: {
         tags: ['Subscription'],
+        operationId: 'subscribeToPlan',
         summary: 'Assina um plano (na organização ativa)',
         body: subscribeBodySchema,
         response: {
@@ -179,6 +182,7 @@ export const subscriptionRoute = tp(async scope => {
     {
       schema: {
         tags: ['Subscription'],
+        operationId: 'cancelSubscription',
         summary: 'Cancela a assinatura da organização ativa',
         response: {
           200: cancelResponseSchema,
@@ -239,6 +243,7 @@ export const subscriptionRoute = tp(async scope => {
       preHandler: requireActivePlan,
       schema: {
         tags: ['Subscription'],
+        operationId: 'getPremiumFeature',
         summary: 'Feature de exemplo que exige plano ativo',
         response: {
           200: premiumResponseSchema,

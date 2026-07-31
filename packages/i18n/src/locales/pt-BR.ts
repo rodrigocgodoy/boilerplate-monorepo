@@ -145,6 +145,9 @@ export const ptBR = {
     noActiveOrg: 'Selecione ou crie uma organização para assinar.',
   },
   organization: {
+    createDescription: 'Você poderá convidar pessoas depois.',
+    nameLabel: 'Nome da organização',
+    nameTooShort: 'Informe ao menos 2 caracteres',
     label: 'Organização',
     noOrg: 'Nenhuma organização',
     switch: 'Trocar organização',

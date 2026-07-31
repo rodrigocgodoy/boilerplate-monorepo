@@ -24,6 +24,7 @@ export const notificationsRoute = tp(async scope => {
     {
       schema: {
         tags: ['Notifications'],
+        operationId: 'listNotifications',
         summary: 'Notificações do usuário + contagem de não lidas',
         response: {
           200: notificationListResponseSchema,
@@ -63,6 +64,7 @@ export const notificationsRoute = tp(async scope => {
     {
       schema: {
         tags: ['Notifications'],
+        operationId: 'markNotificationRead',
         summary: 'Marca uma notificação como lida',
         params: z.object({ id: z.string() }),
         response: {
@@ -90,6 +92,7 @@ export const notificationsRoute = tp(async scope => {
     {
       schema: {
         tags: ['Notifications'],
+        operationId: 'markAllNotificationsRead',
         summary: 'Marca todas as notificações como lidas',
         response: {
           200: markReadResponseSchema,
@@ -115,6 +118,7 @@ export const notificationsRoute = tp(async scope => {
     {
       schema: {
         tags: ['Notifications'],
+        operationId: 'getNotificationPreferences',
         summary: 'Preferências de notificação do usuário',
         response: {
           200: preferencesResponseSchema,
@@ -140,6 +144,7 @@ export const notificationsRoute = tp(async scope => {
     {
       schema: {
         tags: ['Notifications'],
+        operationId: 'updateNotificationPreferences',
         summary: 'Atualiza as preferências de notificação',
         body: updatePreferencesBodySchema,
         response: {
@@ -169,6 +174,7 @@ export const notificationsRoute = tp(async scope => {
     {
       schema: {
         tags: ['Notifications'],
+        operationId: 'sendTestNotification',
         summary: 'Dispara uma notificação de teste para o próprio usuário',
         response: {
           200: markReadResponseSchema,

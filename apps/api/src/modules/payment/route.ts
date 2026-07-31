@@ -41,6 +41,7 @@ export const paymentRoute = tp(async scope => {
     {
       schema: {
         tags: ['Payment'],
+        operationId: 'createPixCharge',
         summary: 'Cria uma cobrança PIX (QR Code)',
         body: createPixBodySchema,
         response: {
@@ -80,6 +81,7 @@ export const paymentRoute = tp(async scope => {
     {
       schema: {
         tags: ['Payment'],
+        operationId: 'createCheckout',
         summary: 'Cria um checkout (PIX + cartão)',
         body: createCheckoutBodySchema,
         response: {
@@ -119,6 +121,7 @@ export const paymentRoute = tp(async scope => {
     {
       schema: {
         tags: ['Payment'],
+        operationId: 'getPayment',
         summary: 'Retorna o status de uma cobrança',
         params: paymentParamsSchema,
         response: {
@@ -173,6 +176,7 @@ export const paymentRoute = tp(async scope => {
     {
       schema: {
         tags: ['Payment'],
+        operationId: 'listPayments',
         summary: 'Histórico de pagamentos (usuário + organização ativa)',
         response: {
           200: paymentListResponseSchema,

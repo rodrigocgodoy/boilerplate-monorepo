@@ -14,6 +14,7 @@ export const meRoute = tp(async scope => {
     {
       schema: {
         tags: ['Me'],
+        operationId: 'getCurrentUser',
         summary: 'Retorna o usuário autenticado',
         response: {
           200: meResponseSchema,

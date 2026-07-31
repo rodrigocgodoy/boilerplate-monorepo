@@ -1,4 +1,4 @@
-import { useGetNotifications } from '@repo/api-client/hooks'
+import { useListNotifications } from '@repo/api-client/hooks'
 import { Button } from '@repo/ui/components/button'
 import { Link } from '@tanstack/react-router'
 import { Bell } from 'lucide-react'
@@ -10,7 +10,7 @@ import { useTranslation } from 'react-i18next'
  */
 export function NotificationBell() {
   const { t } = useTranslation('notifications')
-  const { data } = useGetNotifications()
+  const { data } = useListNotifications()
   const count = data?.data.unreadCount ?? 0
 
   return (

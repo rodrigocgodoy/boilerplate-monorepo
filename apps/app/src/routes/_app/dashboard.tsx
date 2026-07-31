@@ -1,4 +1,4 @@
-import { useGetMe } from '@repo/api-client/hooks'
+import { useGetCurrentUser } from '@repo/api-client/hooks'
 import { Badge } from '@repo/ui/components/badge'
 import { Button } from '@repo/ui/components/button'
 import {
@@ -36,7 +36,7 @@ function Dashboard() {
   ])
   const router = useRouter()
   const queryClient = useQueryClient()
-  const { data, isLoading } = useGetMe()
+  const { data, isLoading } = useGetCurrentUser()
   const me = data?.data
   const { data: session } = authClient.useSession()
   const isAdmin =

@@ -1,7 +1,7 @@
 import {
-  useDeleteApiKeysId,
-  useGetApiKeys,
-  usePostApiKeys,
+  useCreateApiKey,
+  useListApiKeys,
+  useRevokeApiKey,
 } from '@repo/api-client/hooks'
 import { Button } from '@repo/ui/components/button'
 import {
@@ -43,9 +43,9 @@ export const Route = createFileRoute('/_app/api-keys')({
 function ApiKeysPage() {
   const { t, i18n } = useTranslation('apiKeys')
   const qc = useQueryClient()
-  const { data, isLoading } = useGetApiKeys()
-  const createKey = usePostApiKeys()
-  const revokeKey = useDeleteApiKeysId()
+  const { data, isLoading } = useListApiKeys()
+  const createKey = useCreateApiKey()
+  const revokeKey = useRevokeApiKey()
 
   const [name, setName] = useState('')
   const [days, setDays] = useState('')

@@ -8,9 +8,9 @@ import {
   CardHeader,
   CardTitle,
 } from '@repo/ui/components/card'
+import { Field, FieldError, FieldLabel } from '@repo/ui/components/field'
 import { GoogleAuthButton } from '@repo/ui/components/google-auth-button'
 import { Input } from '@repo/ui/components/input'
-import { Label } from '@repo/ui/components/label'
 import {
   Tabs,
   TabsContent,
@@ -21,7 +21,7 @@ import { authClient } from '@repo/utils/auth-client'
 import { useQueryClient } from '@tanstack/react-query'
 import { Link, useRouter, useSearch } from '@tanstack/react-router'
 import { useMemo, useState } from 'react'
-import { useForm } from 'react-hook-form'
+import { Controller, useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { z } from 'zod'
@@ -65,11 +65,15 @@ export function LoginForm() {
 
   const signInForm = useForm<SignInValues>({
     resolver: zodResolver(signInSchema),
+    // `onTouched`: valida ao sair do campo. Só no submit, o usuário descobre
+    // três erros de uma vez depois de preencher o formulário inteiro.
+    mode: 'onTouched',
     defaultValues: { email: '', password: '' },
   })
 
   const signUpForm = useForm<SignUpValues>({
     resolver: zodResolver(signUpSchema),
+    mode: 'onTouched',
     defaultValues: { name: '', email: '', password: '' },
   })
 
@@ -129,34 +133,44 @@ export function LoginForm() {
               onSubmit={signInForm.handleSubmit(onSignIn)}
               className="flex flex-col gap-4"
             >
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="signin-email">{t('fields.email')}</Label>
-                <Input
-                  id="signin-email"
-                  type="email"
-                  autoComplete="email"
-                  {...signInForm.register('email')}
-                />
-                {signInForm.formState.errors.email && (
-                  <p className="text-destructive text-sm">
-                    {signInForm.formState.errors.email.message}
-                  </p>
+              <Controller
+                control={signInForm.control}
+                name="email"
+                render={({ field, fieldState }) => (
+                  <Field data-invalid={fieldState.invalid}>
+                    <FieldLabel htmlFor="signin-email">
+                      {t('fields.email')}
+                    </FieldLabel>
+                    <Input
+                      {...field}
+                      id="signin-email"
+                      type="email"
+                      autoComplete="email"
+                      aria-invalid={fieldState.invalid}
+                    />
+                    <FieldError errors={[fieldState.error]} />
+                  </Field>
                 )}
-              </div>
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="signin-password">{t('fields.password')}</Label>
-                <Input
-                  id="signin-password"
-                  type="password"
-                  autoComplete="current-password"
-                  {...signInForm.register('password')}
-                />
-                {signInForm.formState.errors.password && (
-                  <p className="text-destructive text-sm">
-                    {signInForm.formState.errors.password.message}
-                  </p>
+              />
+              <Controller
+                control={signInForm.control}
+                name="password"
+                render={({ field, fieldState }) => (
+                  <Field data-invalid={fieldState.invalid}>
+                    <FieldLabel htmlFor="signin-password">
+                      {t('fields.password')}
+                    </FieldLabel>
+                    <Input
+                      {...field}
+                      id="signin-password"
+                      type="password"
+                      autoComplete="current-password"
+                      aria-invalid={fieldState.invalid}
+                    />
+                    <FieldError errors={[fieldState.error]} />
+                  </Field>
                 )}
-              </div>
+              />
               <Button
                 type="submit"
                 disabled={signInForm.formState.isSubmitting}
@@ -179,47 +193,62 @@ export function LoginForm() {
               onSubmit={signUpForm.handleSubmit(onSignUp)}
               className="flex flex-col gap-4"
             >
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="signup-name">{t('fields.name')}</Label>
-                <Input
-                  id="signup-name"
-                  autoComplete="name"
-                  {...signUpForm.register('name')}
-                />
-                {signUpForm.formState.errors.name && (
-                  <p className="text-destructive text-sm">
-                    {signUpForm.formState.errors.name.message}
-                  </p>
+              <Controller
+                control={signUpForm.control}
+                name="name"
+                render={({ field, fieldState }) => (
+                  <Field data-invalid={fieldState.invalid}>
+                    <FieldLabel htmlFor="signup-name">
+                      {t('fields.name')}
+                    </FieldLabel>
+                    <Input
+                      {...field}
+                      id="signup-name"
+                      autoComplete="name"
+                      aria-invalid={fieldState.invalid}
+                    />
+                    <FieldError errors={[fieldState.error]} />
+                  </Field>
                 )}
-              </div>
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="signup-email">{t('fields.email')}</Label>
-                <Input
-                  id="signup-email"
-                  type="email"
-                  autoComplete="email"
-                  {...signUpForm.register('email')}
-                />
-                {signUpForm.formState.errors.email && (
-                  <p className="text-destructive text-sm">
-                    {signUpForm.formState.errors.email.message}
-                  </p>
+              />
+              <Controller
+                control={signUpForm.control}
+                name="email"
+                render={({ field, fieldState }) => (
+                  <Field data-invalid={fieldState.invalid}>
+                    <FieldLabel htmlFor="signup-email">
+                      {t('fields.email')}
+                    </FieldLabel>
+                    <Input
+                      {...field}
+                      id="signup-email"
+                      type="email"
+                      autoComplete="email"
+                      aria-invalid={fieldState.invalid}
+                    />
+                    <FieldError errors={[fieldState.error]} />
+                  </Field>
                 )}
-              </div>
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="signup-password">{t('fields.password')}</Label>
-                <Input
-                  id="signup-password"
-                  type="password"
-                  autoComplete="new-password"
-                  {...signUpForm.register('password')}
-                />
-                {signUpForm.formState.errors.password && (
-                  <p className="text-destructive text-sm">
-                    {signUpForm.formState.errors.password.message}
-                  </p>
+              />
+              <Controller
+                control={signUpForm.control}
+                name="password"
+                render={({ field, fieldState }) => (
+                  <Field data-invalid={fieldState.invalid}>
+                    <FieldLabel htmlFor="signup-password">
+                      {t('fields.password')}
+                    </FieldLabel>
+                    <Input
+                      {...field}
+                      id="signup-password"
+                      type="password"
+                      autoComplete="new-password"
+                      aria-invalid={fieldState.invalid}
+                    />
+                    <FieldError errors={[fieldState.error]} />
+                  </Field>
                 )}
-              </div>
+              />
               <Button
                 type="submit"
                 disabled={signUpForm.formState.isSubmitting}
