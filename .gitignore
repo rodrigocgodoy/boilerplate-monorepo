@@ -32,3 +32,6 @@ test-results
 playwright-report
 blob-report
 playwright/.cache
+
+# Cobertura de testes (relatórios v8/lcov, recriados por pnpm test:coverage)
+coverage

@@ -1,0 +1,26 @@
+{
+  "name": "@repo/vitest-config",
+  "version": "0.0.0",
+  "type": "module",
+  "private": true,
+  "exports": {
+    "./base": "./src/base.ts",
+    "./node": "./src/node.ts",
+    "./react": "./src/react.ts",
+    "./setup-react": "./src/setup-react.ts"
+  },
+  "dependencies": {
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@vitejs/plugin-react": "^4.7.0",
+    "jsdom": "^29.1.1"
+  },
+  "peerDependencies": {
+    "vitest": "^3.2.4"
+  },
+  "devDependencies": {
+    "@repo/typescript-config": "workspace:*",
+    "typescript": "5.5.4",
+    "vitest": "^3.2.4"
+  }
+}

@@ -51,6 +51,7 @@ Por que cada peça está aqui, e o que foi descartado no caminho.
 | `packages/utils` | `auth-client` e resolução de URL da API |
 | `packages/biome-config` | Configuração de lint e formatação compartilhada |
 | `packages/typescript-config` | `tsconfig` base compartilhado |
+| `packages/vitest-config` | Presets de teste compartilhados (`base`, `node`, `react`) |
 
 ---
 
@@ -82,12 +83,15 @@ Mudou ou adicionou rota? `pnpm openapi && pnpm api-client`. Qualquer divergênci
 │   ├── i18n                # pt-BR, en, es
 │   ├── utils
 │   ├── biome-config
-│   └── typescript-config
+│   ├── typescript-config
+│   └── vitest-config       # presets de teste compartilhados
+├── scripts                 # test-db.ts (banco de teste efêmero)
 ├── .agents/skills          # instruções para agentes de IA
 ├── .claude/skills          # skills do Claude Code
 ├── .github/workflows       # CI
 ├── CLAUDE.md               # contexto do projeto para IA
-├── docker-compose.yml      # Postgres local
+├── docker-compose.yml      # Postgres + Redis local
+├── docker-compose.test.yml # Postgres efêmero dos testes
 └── turbo.json
 ```
 
@@ -125,6 +129,33 @@ Documentação da API (Scalar) em `http://localhost:3333/reference`, em modo de 
 | `pnpm db:migrate` | Aplica as migrations |
 | `pnpm openapi` | Sobe o Fastify em memória e escreve o `openapi.yaml` |
 | `pnpm api-client` | Roda o Kubb e regenera models e hooks |
+| `pnpm test` | Vitest em todos os workspaces, sem precisar de Docker |
+| `pnpm test:db` | Sobe um Postgres efêmero e roda a suíte completa |
+| `pnpm test:e2e` | E2E com a stack real: Postgres, API e app |
+| `pnpm test:coverage` | Relatório de cobertura por workspace |
+| `pnpm lint` | Biome em todo o repositório |
+
+---
+
+## Testes
+
+```bash
+pnpm test        # Vitest em todos os workspaces (não precisa de Docker)
+pnpm test:db     # sobe um Postgres efêmero e roda a suíte COMPLETA
+pnpm test:e2e    # E2E real: Postgres + API + app, sem mock
+```
+
+Vitest para unit e integração, Playwright para o caminho crítico. Estratégia completa e cobertura em [`TESTING.md`](./TESTING.md); aqui ficam as decisões que valem explicar.
+
+**Configuração compartilhada, não copiada.** Os presets do Vitest vivem em `packages/vitest-config` (`base`, `node`, `react`) e cada workspace declara apenas o que é dele. Configuração de teste duplicada diverge em silêncio: um workspace ganha uma regra, o outro não, e a diferença só aparece quando um teste falha por motivo errado.
+
+**A suíte roda sem infraestrutura; o banco é opt-in e efêmero.** `pnpm test` funciona em máquina sem Docker — os testes de integração se pulam sozinhos. Quando o banco entra, é um container próprio em `tmpfs`, numa porta própria, criado e destruído pelo comando. Os testes nunca alcançam o banco de desenvolvimento e não existe estado sobrevivente entre execuções.
+
+**Um E2E que roda de verdade.** `auth-flow.spec.ts` faz cadastro até o dashboard contra API e Postgres reais, sem um único mock. É o único teste capaz de afirmar que a corrente Zod → OpenAPI → Kubb → React está inteira; dez specs com a rede mockada não afirmam isso. Os smokes mockados continuam existindo para quem quer retorno rápido sem Docker.
+
+**Rede mockada em teste unitário.** `apps/app` mocka `@repo/api-client` e o `auth-client`. Teste unitário que faz I/O é lento, falha quando a rede oscila e transforma problema de ambiente em suspeita de código.
+
+**Cobertura como diagnóstico, não como meta.** O relatório conta todos os arquivos (`all: true`), então o número global é baixo de propósito: ele mostra o que não é testado em vez de premiar quem testa o trivial. O alvo é o caminho crítico — login, dashboard, `GET /me` e autenticação —, que está entre 85% e 97%.
 
 ---
 
