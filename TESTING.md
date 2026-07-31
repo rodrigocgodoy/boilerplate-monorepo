@@ -40,6 +40,8 @@ pnpm --filter @repo/app test:e2e:ui    # runner visual
 | `apps/api/test/queue.int.test.ts` | **integração com Redis** | fila real: enfileirar→processar, retry com backoff, DLQ, replay, payload obsoleto e shutdown esperando o job ativo |
 | `apps/app/test/login-form.test.tsx` | componente (jsdom) | validação Zod, payload enviado ao Better Auth, toast de erro, aba de cadastro |
 | `apps/app/test/dashboard.test.tsx` | componente (jsdom) | dados do `useGetMe`, skeleton, sessão expirada, badge de não lidas, logout |
+| `apps/api/test/problem-details.test.ts` | integração (`app.inject`) | formato único de erro: validação com campo, 404, 401, `requestId` e o hook que não remarca corpo alheio |
+| `packages/env/test/parse.test.ts` | unit | mensagem de erro do env: nomeia a variável, distingue ausente de inválida e omite segredos |
 | `packages/ui/test/*.test.tsx` | componente (jsdom) | render, acessibilidade e composição (`asChild`) dos primitivos |
 | `apps/app/e2e/auth-flow.spec.ts` | **E2E real** | caminho crítico ponta a ponta, sem mock nenhum |
 | `apps/app/e2e/login.spec.ts` | E2E (API mockada) | login, `?redirect=`, fluxo de "esqueci a senha" |

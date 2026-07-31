@@ -1,5 +1,7 @@
 import { getAuthSession } from '@/utils/auth.js'
 import { tp } from '@/utils/fastify.js'
+import { rateLimitProfiles } from '@/utils/rate-limit.js'
+import { problem } from '@/utils/send-problem.js'
 import { meErrorSchema, meResponseSchema } from './schemas.js'
 
 /**
@@ -28,7 +30,9 @@ export const meRoute = tp(async scope => {
       const session = await scope.services.auth.auth.api.getSession({ headers })
 
       if (!session?.user) {
-        return reply.status(401).send({ error: request.t('auth:unauthorized') })
+        return reply
+          .status(401)
+          .send(problem(request, 401, request.t('auth:unauthorized')))
       }
 
       const { user } = session
@@ -53,11 +57,18 @@ export const meRoute = tp(async scope => {
   // fetch com credenciais e salva o arquivo.
   scope.get(
     '/me/export',
-    { schema: { hide: true } },
+    {
+      schema: { hide: true },
+      // Cada chamada varre perfil, contas, sessões, orgs, API keys e audit log.
+      // Sob o teto global (100/min) isso é um DoS barato contra o banco.
+      config: { rateLimit: rateLimitProfiles.expensive },
+    },
     async (request, reply) => {
       const session = await getAuthSession(scope, request)
       if (!session) {
-        return reply.status(401).send({ error: request.t('auth:unauthorized') })
+        return reply
+          .status(401)
+          .send(problem(request, 401, request.t('auth:unauthorized')))
       }
       const data = await scope.services.me.exportUserData(session.userId)
       return reply

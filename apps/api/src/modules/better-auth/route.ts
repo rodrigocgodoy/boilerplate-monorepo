@@ -1,4 +1,5 @@
 import { tp } from '@/utils/fastify.js'
+import { problem } from '@/utils/send-problem.js'
 
 export const betterAuthRoute = tp(async scope => {
   scope.route({
@@ -42,10 +43,9 @@ export const betterAuthRoute = tp(async scope => {
       } catch (error) {
         scope.log.error('Authentication Error:')
         scope.log.error(error)
-        reply.status(500).send({
-          error: 'Internal authentication error',
-          code: 'AUTH_FAILURE',
-        })
+        reply
+          .status(500)
+          .send(problem(request, 500, 'Internal authentication error'))
       }
     },
   })

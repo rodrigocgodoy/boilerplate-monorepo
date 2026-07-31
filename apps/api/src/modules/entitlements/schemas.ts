@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { problemSchema } from '@/utils/problem.js'
 
 /** Resultado de quota de uma métrica (limite vs uso). `null` = ilimitado. */
 export const quotaSchema = z.object({
@@ -23,6 +24,8 @@ export const trackBodySchema = z.object({
   amount: z.number().int().positive().max(1000).optional(),
 })
 
-export const entitlementsErrorSchema = z.object({
-  error: z.string(),
-})
+/**
+ * Erros deste módulo seguem Problem Details (RFC 9457), igual ao resto da
+ * API. O alias mantém o nome já usado nas rotas. Ver `utils/problem.ts`.
+ */
+export const entitlementsErrorSchema = problemSchema

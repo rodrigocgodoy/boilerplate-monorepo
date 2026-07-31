@@ -1,5 +1,6 @@
 import type { FastifyReply, FastifyRequest } from 'fastify'
 import { getAuthSession } from '@/utils/auth.js'
+import { problem } from '@/utils/send-problem.js'
 
 /**
  * Factory de preHandler que bloqueia uma ação quando a quota da métrica já foi
@@ -22,17 +23,23 @@ export function requireQuota(metric: string) {
     const app = request.server
     const session = await getAuthSession(app, request)
     if (!session) {
-      reply.status(401).send({ error: request.t('payment:unauthorized') })
+      reply
+        .status(401)
+        .send(problem(request, 401, request.t('payment:unauthorized')))
       return
     }
     const orgId = session.activeOrganizationId
     if (!orgId) {
-      reply.status(400).send({ error: request.t('subscription:noActiveOrg') })
+      reply
+        .status(400)
+        .send(problem(request, 400, request.t('subscription:noActiveOrg')))
       return
     }
     const quota = await app.services.entitlements.checkQuota(orgId, metric)
     if (!quota.allowed) {
-      reply.status(402).send({ error: request.t('entitlements:quotaExceeded') })
+      reply
+        .status(402)
+        .send(problem(request, 402, request.t('entitlements:quotaExceeded')))
     }
   }
 }

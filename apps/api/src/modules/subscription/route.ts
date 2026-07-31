@@ -10,6 +10,7 @@ import { getAuthSession } from '@/utils/auth.js'
 import { env } from '@/utils/environment.js'
 import { tp } from '@/utils/fastify.js'
 import type { AppTFunction } from '@/utils/i18n.js'
+import { problem } from '@/utils/send-problem.js'
 import { requireActivePlan } from './guard.js'
 import {
   cancelResponseSchema,
@@ -69,7 +70,7 @@ export const subscriptionRoute = tp(async scope => {
       if (!session) {
         return reply
           .status(401)
-          .send({ error: request.t('payment:unauthorized') })
+          .send(problem(request, 401, request.t('payment:unauthorized')))
       }
       const plans = await subscription.listPlans()
       return reply.status(200).send({ plans: plans.map(mapPlan) })
@@ -94,7 +95,7 @@ export const subscriptionRoute = tp(async scope => {
       if (!session) {
         return reply
           .status(401)
-          .send({ error: request.t('payment:unauthorized') })
+          .send(problem(request, 401, request.t('payment:unauthorized')))
       }
       // Sem org ativa → sem assinatura (o front pede pra criar/selecionar org).
       const { subscription: sub, isActive } = session.activeOrganizationId
@@ -136,18 +137,18 @@ export const subscriptionRoute = tp(async scope => {
       if (!isPaymentEnabled) {
         return reply
           .status(503)
-          .send({ error: request.t('payment:notConfigured') })
+          .send(problem(request, 503, request.t('payment:notConfigured')))
       }
       const session = await getAuthSession(scope, request)
       if (!session) {
         return reply
           .status(401)
-          .send({ error: request.t('payment:unauthorized') })
+          .send(problem(request, 401, request.t('payment:unauthorized')))
       }
       if (!session.activeOrganizationId) {
         return reply
           .status(400)
-          .send({ error: request.t('subscription:noActiveOrg') })
+          .send(problem(request, 400, request.t('subscription:noActiveOrg')))
       }
       try {
         const result = await subscription.subscribe(
@@ -166,8 +167,8 @@ export const subscriptionRoute = tp(async scope => {
         })
         return reply.status(200).send(result)
       } catch (error) {
-        const { status, body } = subscriptionErrorReply(error, request.t)
-        return reply.status(status).send(body)
+        const { status, detail } = subscriptionErrorReply(error, request.t)
+        return reply.status(status).send(problem(request, status, detail))
       }
     },
   )
@@ -194,18 +195,18 @@ export const subscriptionRoute = tp(async scope => {
       if (!isPaymentEnabled) {
         return reply
           .status(503)
-          .send({ error: request.t('payment:notConfigured') })
+          .send(problem(request, 503, request.t('payment:notConfigured')))
       }
       const session = await getAuthSession(scope, request)
       if (!session) {
         return reply
           .status(401)
-          .send({ error: request.t('payment:unauthorized') })
+          .send(problem(request, 401, request.t('payment:unauthorized')))
       }
       if (!session.activeOrganizationId) {
         return reply
           .status(400)
-          .send({ error: request.t('subscription:noActiveOrg') })
+          .send(problem(request, 400, request.t('subscription:noActiveOrg')))
       }
       try {
         const cancelled = await subscription.cancel(
@@ -223,8 +224,8 @@ export const subscriptionRoute = tp(async scope => {
         }
         return reply.status(200).send({ cancelled })
       } catch (error) {
-        const { status, body } = subscriptionErrorReply(error, request.t)
-        return reply.status(status).send(body)
+        const { status, detail } = subscriptionErrorReply(error, request.t)
+        return reply.status(status).send(problem(request, status, detail))
       }
     },
   )
@@ -258,18 +259,18 @@ export const subscriptionRoute = tp(async scope => {
 function subscriptionErrorReply(
   error: unknown,
   t: AppTFunction,
-): { status: 404 | 500 | 502 | 503; body: { error: string } } {
+): { status: 404 | 500 | 502 | 503; detail: string } {
   if (error instanceof PaymentNotConfiguredError) {
-    return { status: 503, body: { error: t('payment:notConfigured') } }
+    return { status: 503, detail: t('payment:notConfigured') }
   }
   if (error instanceof PaymentError) {
     if (error.message === 'plan_not_found') {
-      return { status: 404, body: { error: t('subscription:planNotFound') } }
+      return { status: 404, detail: t('subscription:planNotFound') }
     }
     if (error.message === 'plan_not_linked') {
-      return { status: 503, body: { error: t('subscription:planNotLinked') } }
+      return { status: 503, detail: t('subscription:planNotLinked') }
     }
-    return { status: 502, body: { error: t('subscription:subscribeFailed') } }
+    return { status: 502, detail: t('subscription:subscribeFailed') }
   }
-  return { status: 500, body: { error: t('subscription:subscribeFailed') } }
+  return { status: 500, detail: t('subscription:subscribeFailed') }
 }

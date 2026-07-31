@@ -1,7 +1,8 @@
+import { env } from '@repo/env/client'
 import * as Sentry from '@sentry/react'
 import type { ReactNode } from 'react'
 
-const dsn = process.env.VITE_SENTRY_DSN
+const dsn = env.VITE_SENTRY_DSN
 
 /** Observabilidade do client está ligada? (depende de VITE_SENTRY_DSN). */
 export const observabilityEnabled = Boolean(dsn)
@@ -16,11 +17,9 @@ export function initObservability(): void {
   Sentry.init({
     dsn,
     environment:
-      process.env.VITE_SENTRY_ENVIRONMENT ||
-      process.env.NODE_ENV ||
-      'production',
+      env.VITE_SENTRY_ENVIRONMENT || process.env.NODE_ENV || 'production',
     integrations: [Sentry.browserTracingIntegration()],
-    tracesSampleRate: Number(process.env.VITE_SENTRY_TRACES_SAMPLE_RATE ?? 0),
+    tracesSampleRate: env.VITE_SENTRY_TRACES_SAMPLE_RATE,
   })
 }
 

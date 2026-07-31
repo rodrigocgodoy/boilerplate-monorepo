@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { problemSchema } from '@/utils/problem.js'
 
 /** Chave como exibida na listagem (sem o token nem o hash). */
 export const apiKeyItemSchema = z.object({
@@ -43,6 +44,8 @@ export const apiKeyPingResponseSchema = z.object({
   message: z.string(),
 })
 
-export const apiKeyErrorSchema = z.object({
-  error: z.string(),
-})
+/**
+ * Erros deste módulo seguem Problem Details (RFC 9457), igual ao resto da
+ * API. O alias mantém o nome já usado nas rotas. Ver `utils/problem.ts`.
+ */
+export const apiKeyErrorSchema = problemSchema

@@ -1,6 +1,7 @@
 import type { FastifyReply, FastifyRequest } from 'fastify'
 import { getAuthSession } from '@/utils/auth.js'
 import { env } from '@/utils/environment.js'
+import { problem } from '@/utils/send-problem.js'
 
 /**
  * preHandler do Fastify que bloqueia uma feature por plano (escopo: organização
@@ -24,7 +25,9 @@ export async function requireActivePlan(
 
   const session = await getAuthSession(app, request)
   if (!session) {
-    reply.status(401).send({ error: request.t('payment:unauthorized') })
+    reply
+      .status(401)
+      .send(problem(request, 401, request.t('payment:unauthorized')))
     return
   }
 
@@ -37,6 +40,8 @@ export async function requireActivePlan(
         .isActive
     : false
   if (!isActive) {
-    reply.status(402).send({ error: request.t('subscription:planRequired') })
+    reply
+      .status(402)
+      .send(problem(request, 402, request.t('subscription:planRequired')))
   }
 }

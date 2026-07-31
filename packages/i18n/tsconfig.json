@@ -1,5 +1,13 @@
 {
   "extends": "@repo/typescript-config/base.json",
+  "compilerOptions": {
+    // `NodeNext` porque este pacote é carregado em runtime pelo Node (a API o
+    // importa para traduzir respostas). Ver a nota em `packages/env`.
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "outDir": "dist",
+    "rootDir": "src"
+  },
   "include": ["src/**/*.ts"],
-  "exclude": ["node_modules"]
+  "exclude": ["node_modules", "dist"]
 }
