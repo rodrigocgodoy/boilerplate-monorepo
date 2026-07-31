@@ -1,6 +1,7 @@
 import './styles/global.css'
 import './i18n'
 
+import NiceModal from '@ebay/nice-modal-react'
 import { setupApiClient } from '@repo/api-client/setup'
 import { Toaster } from '@repo/ui/components/sonner'
 import {
@@ -13,6 +14,9 @@ import { StrictMode } from 'react'
 import ReactDOM from 'react-dom/client'
 import { capturePageview, initAnalytics } from './analytics'
 import { initObservability, ObservabilityBoundary } from './observability'
+// Import com efeito colateral: registra os modais por id. Precisa vir antes do
+// primeiro `show()`, e uma vez só — por isso mora aqui, no entrypoint.
+import './stores/modals/register-modals'
 import { routeTree } from './routeTree.gen'
 
 // Observabilidade (Sentry) — no-op sem VITE_SENTRY_DSN. Antes do render.
@@ -52,8 +56,12 @@ declare module '@tanstack/react-router' {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router} />
-      <Toaster />
+      {/* Provider dos modais **dentro** do QueryClientProvider: modal que faz
+          mutation precisa enxergar o mesmo QueryClient da árvore. */}
+      <NiceModal.Provider>
+        <RouterProvider router={router} />
+        <Toaster />
+      </NiceModal.Provider>
     </QueryClientProvider>
   )
 }

@@ -33,6 +33,14 @@ pnpm dev              # api :3333 + app :5173
 pnpm lint / pnpm lint:fix / pnpm build
 ```
 
+**Antes de implementar:** leia o [`CONVENTIONS.md`](./CONVENTIONS.md) — ele define
+como o código deve ser escrito (módulos, `operationId`, formulários, modais,
+erros, nomes) e traz a lista de anti-padrões. Este arquivo é o mapa do repo; o
+CONVENTIONS é o contrato.
+
+**Slash commands** (`.claude/commands/`): `/new-module` (cria um módulo da API no
+padrão) e `/kubb-sync` (regenera o contrato depois de mexer em rota).
+
 **Regras importantes:**
 
 - Ao mudar/adicionar rota na API, rode `pnpm openapi && pnpm api-client` para

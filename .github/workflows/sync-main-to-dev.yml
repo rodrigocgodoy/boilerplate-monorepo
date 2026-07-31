@@ -1,0 +1,80 @@
+name: Sync main → dev
+
+# Traz a `main` de volta para a `dev` a cada push na main.
+#
+# O problema que isso resolve: hotfix sai de `main`, e se ninguém fizer o
+# back-merge, a `dev` fica sem o fix. Na próxima release, o merge `dev → main`
+# **reverte o hotfix** — e o bug volta a produção sem que ninguém tenha mexido
+# nele. Automatizar é mais barato que confiar na memória de quem está apagando
+# incêndio às 3 da manhã.
+#
+# Em release (`dev → main`) o job vira no-op: a `dev` já tem tudo.
+#
+# Só age se a branch `dev` existir. Enquanto o repositório trabalhar direto na
+# `main`, este workflow não faz nada. Ver docs/GIT-FLOW.md.
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: sync-main-to-dev
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: A branch dev existe?
+        id: check
+        run: |
+          if git ls-remote --exit-code --heads origin dev >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "Branch \`dev\` não existe — nada a sincronizar." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Merge main → dev
+        if: steps.check.outputs.exists == 'true'
+        id: merge
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout dev
+          git merge --no-edit origin/main && echo "clean=true" >> "$GITHUB_OUTPUT" || {
+            echo "clean=false" >> "$GITHUB_OUTPUT"
+            git merge --abort
+          }
+
+      - name: Push (merge limpo)
+        if: steps.merge.outputs.clean == 'true'
+        run: |
+          git push origin dev
+          echo "\`main\` sincronizada na \`dev\`." >> "$GITHUB_STEP_SUMMARY"
+
+      # Conflito não pode ser resolvido às cegas por um bot: abre PR para alguém
+      # decidir. Sem isso, a alternativa seria falhar em silêncio.
+      - name: Abrir PR (conflito)
+        if: steps.merge.outputs.clean == 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          BRANCH="chore/sync-main-to-dev-${GITHUB_SHA::7}"
+          git checkout -B "$BRANCH" origin/main
+          git push -u origin "$BRANCH"
+          gh pr create --base dev --head "$BRANCH" \
+            --title "chore: sincronizar main → dev (conflito)" \
+            --body "O merge automático de \`main\` para \`dev\` deu conflito. Resolva aqui.
+
+Enquanto isso não for mergeado, a \`dev\` está **atrás da produção** — e a próxima release pode reverter o que está em \`main\`." \
+            || echo "PR já existe"
+          echo "Conflito: PR aberta em \`$BRANCH\`." >> "$GITHUB_STEP_SUMMARY"

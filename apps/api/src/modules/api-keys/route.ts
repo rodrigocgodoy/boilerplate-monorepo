@@ -41,6 +41,7 @@ export const apiKeysRoute = tp(async scope => {
     {
       schema: {
         tags: ['ApiKeys'],
+        operationId: 'listApiKeys',
         summary: 'Lista as API keys da organização ativa',
         response: { 200: apiKeyListResponseSchema, 401: apiKeyErrorSchema },
       },
@@ -76,6 +77,7 @@ export const apiKeysRoute = tp(async scope => {
     {
       schema: {
         tags: ['ApiKeys'],
+        operationId: 'createApiKey',
         summary: 'Cria uma API key (owner/admin) — token exibido uma vez',
         body: createApiKeyBodySchema,
         response: {
@@ -129,6 +131,7 @@ export const apiKeysRoute = tp(async scope => {
     {
       schema: {
         tags: ['ApiKeys'],
+        operationId: 'revokeApiKey',
         summary: 'Revoga uma API key (owner/admin)',
         params: z.object({ id: z.string() }),
         response: {
@@ -176,6 +179,7 @@ export const apiKeysRoute = tp(async scope => {
       preHandler: requireApiKey(),
       schema: {
         tags: ['ApiKeys'],
+        operationId: 'pingWithApiKey',
         summary: 'Exemplo autenticado por API key (Bearer)',
         security: [{ Bearer: [] }],
         response: { 200: apiKeyPingResponseSchema, 401: apiKeyErrorSchema },

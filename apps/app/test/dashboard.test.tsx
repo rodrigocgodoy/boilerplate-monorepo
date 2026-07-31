@@ -7,7 +7,7 @@ import { navigation } from './helpers/router'
 
 /**
  * Dashboard — a rota autenticada de exemplo. O que importa aqui é o contrato
- * com o `@repo/api-client`: o hook **gerado pelo Kubb** (`useGetMe`) devolve
+ * com o `@repo/api-client`: o hook **gerado pelo Kubb** (`useGetCurrentUser`) devolve
  * `{ data: { data: Me } }`, e a tela troca skeleton por dados.
  *
  * `@repo/api-client` é mockado de propósito: em teste unitário, rede é
@@ -19,12 +19,12 @@ vi.mock('@tanstack/react-router', async () =>
   (await import('./helpers/router')).routerMock(),
 )
 
-const useGetMe = vi.fn()
-const useGetNotifications = vi.fn()
+const useGetCurrentUser = vi.fn()
+const useListNotifications = vi.fn()
 
 vi.mock('@repo/api-client/hooks', () => ({
-  useGetMe: () => useGetMe(),
-  useGetNotifications: () => useGetNotifications(),
+  useGetCurrentUser: () => useGetCurrentUser(),
+  useListNotifications: () => useListNotifications(),
 }))
 
 const signOut = vi.fn()
@@ -59,11 +59,11 @@ const Dashboard = Route.options.component as ComponentType
 
 describe('Dashboard', () => {
   beforeEach(() => {
-    useGetMe.mockReturnValue({ data: { data: me }, isLoading: false })
-    useGetNotifications.mockReturnValue({ data: { data: { unreadCount: 0 } } })
+    useGetCurrentUser.mockReturnValue({ data: { data: me }, isLoading: false })
+    useListNotifications.mockReturnValue({ data: { data: { unreadCount: 0 } } })
   })
 
-  it('mostra os dados do usuário vindos do useGetMe', async () => {
+  it('mostra os dados do usuário vindos do useGetCurrentUser', async () => {
     await render(<Dashboard />)
 
     expect(screen.getByText('Ana Tester')).toBeInTheDocument()
@@ -75,7 +75,7 @@ describe('Dashboard', () => {
   })
 
   it('mostra skeleton enquanto o GET /me está carregando', async () => {
-    useGetMe.mockReturnValue({ data: undefined, isLoading: true })
+    useGetCurrentUser.mockReturnValue({ data: undefined, isLoading: true })
 
     const { container } = await render(<Dashboard />)
 
@@ -86,15 +86,15 @@ describe('Dashboard', () => {
   it('não quebra quando o GET /me responde sem dados (sessão expirada)', async () => {
     // `isLoading: false` + `data: undefined` é o estado após um 401: a tela
     // precisa continuar de pé em vez de estourar em `me.name`.
-    useGetMe.mockReturnValue({ data: undefined, isLoading: false })
+    useGetCurrentUser.mockReturnValue({ data: undefined, isLoading: false })
 
     await render(<Dashboard />)
 
     expect(screen.getByText('Usuário autenticado')).toBeInTheDocument()
   })
 
-  it('o badge de não lidas aparece com o contador do useGetNotifications', async () => {
-    useGetNotifications.mockReturnValue({ data: { data: { unreadCount: 3 } } })
+  it('o badge de não lidas aparece com o contador do useListNotifications', async () => {
+    useListNotifications.mockReturnValue({ data: { data: { unreadCount: 3 } } })
 
     await render(<Dashboard />)
 

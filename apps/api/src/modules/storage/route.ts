@@ -22,6 +22,7 @@ export const storageRoute = tp(async scope => {
     {
       schema: {
         tags: ['Storage'],
+        operationId: 'createAvatarUpload',
         summary: 'Gera um upload pré-assinado para o avatar (S3)',
         body: presignAvatarBodySchema,
         response: {

@@ -14,6 +14,8 @@ import { vi } from 'vitest'
 export const navigation = {
   push: vi.fn<(to: string) => void>(),
   navigate: vi.fn<(opts: { to: string }) => void>(),
+  /** Usado por componentes que refazem os loaders após mutar dados. */
+  invalidate: vi.fn<() => void>(),
 }
 
 /** Search params devolvidos por `useSearch`. Ajuste no teste quando importar. */
@@ -43,6 +45,7 @@ export function routerMock() {
     useRouter: () => ({
       history: { push: navigation.push },
       navigate: navigation.navigate,
+      invalidate: navigation.invalidate,
     }),
     useNavigate: () => navigation.navigate,
     useSearch: () => search,

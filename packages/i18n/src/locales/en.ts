@@ -144,6 +144,9 @@ export const en = {
     noActiveOrg: 'Select or create an organization to subscribe.',
   },
   organization: {
+    createDescription: 'You can invite people later.',
+    nameLabel: 'Organization name',
+    nameTooShort: 'Enter at least 2 characters',
     label: 'Organization',
     noOrg: 'No organization',
     switch: 'Switch organization',

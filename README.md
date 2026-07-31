@@ -68,6 +68,8 @@ flowchart LR
 
 Mudou ou adicionou rota? `pnpm openapi && pnpm api-client`. Qualquer divergência entre API e frontend passa a falhar em tempo de compilação, não em produção.
 
+**Toda rota declara um `operationId`**, e é ele que nomeia o hook: `listApiKeys` vira `useListApiKeys`. Sem `operationId`, o Kubb deriva o nome de método + path (`usePostEntitlementsTrack`), e aí mudar uma rota de lugar renomeia o hook e quebra todos os imports do front. O nome descreve a ação, não o verbo HTTP.
+
 ---
 
 ## Estrutura
@@ -261,7 +263,9 @@ A ideia é que o agente conheça as convenções do monorepo antes da primeira i
 
 - [`ROADMAP.md`](./ROADMAP.md) — o que ainda está previsto
 - [`TESTING.md`](./TESTING.md) — estratégia e execução de testes
+- [`CONVENTIONS.md`](./CONVENTIONS.md) — **como o código deve ser escrito** (leitura obrigatória antes de implementar)
 - [`UPGRADES.md`](./UPGRADES.md) — como adicionar Redis, storage, e-mail e outros serviços
+- [`docs/GIT-FLOW.md`](./docs/GIT-FLOW.md) — fluxo com branch de integração (opcional)
 - [`DEPLOYING.md`](./DEPLOYING.md) — imagens Docker e opções de hospedagem, com comparativo
 
 ## Licença

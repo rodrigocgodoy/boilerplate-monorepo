@@ -1,9 +1,9 @@
 import {
-  useGetPayments,
-  useGetPlans,
+  useCancelSubscription,
   useGetSubscription,
-  usePostSubscription,
-  usePostSubscriptionCancel,
+  useListPayments,
+  useListPlans,
+  useSubscribeToPlan,
 } from '@repo/api-client/hooks'
 import { Badge } from '@repo/ui/components/badge'
 import { Button } from '@repo/ui/components/button'
@@ -48,10 +48,10 @@ function Subscription() {
   const locale = i18n.resolvedLanguage
 
   const subQuery = useGetSubscription()
-  const plansQuery = useGetPlans()
-  const paymentsQuery = useGetPayments()
-  const subscribe = usePostSubscription()
-  const cancel = usePostSubscriptionCancel()
+  const plansQuery = useListPlans()
+  const paymentsQuery = useListPayments()
+  const subscribe = useSubscribeToPlan()
+  const cancel = useCancelSubscription()
 
   const current = subQuery.data?.data.subscription ?? null
   const isActive = subQuery.data?.data.isActive ?? false
