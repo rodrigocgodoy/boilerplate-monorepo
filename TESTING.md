@@ -110,6 +110,13 @@ Dois modos, escolhidos pela presença de `TEST_DATABASE_URL`:
 A readiness da API é o próprio `/health` (que consulta o banco), não a porta
 aberta — assim o Playwright só começa quando a stack inteira responde.
 
+> **Build antes do E2E.** A API roda via `tsx` (fonte), mas importa
+> `@repo/database` e `@repo/emails` pelo **`dist`** — sem build, ela nem sobe.
+> O `pnpm test:e2e` já constrói o necessário (`turbo run build
+> --filter=@repo/api --filter=@repo/api-client`), então funciona em clone limpo;
+> o Turbo cacheia, e da segunda vez em diante isso é instantâneo. Se você chamar
+> o Playwright direto (`pnpm --filter @repo/app test:e2e`), construa antes.
+
 Seletores por `id` (`#signin-email`) são estáveis entre idiomas. No E2E real,
 prefira escopar (ex.: o `<dl>` do dashboard): o nome do usuário também aparece no
 seletor de organização, e um seletor amplo passaria sem provar nada.
