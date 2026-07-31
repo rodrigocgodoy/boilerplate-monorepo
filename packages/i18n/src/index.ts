@@ -1,5 +1,5 @@
-import './types'
+import './types.js'
 
-export * from './config'
-export { resolveLanguage } from './detect'
-export { resources } from './resources'
+export * from './config.js'
+export { resolveLanguage } from './detect.js'
+export { resources } from './resources.js'

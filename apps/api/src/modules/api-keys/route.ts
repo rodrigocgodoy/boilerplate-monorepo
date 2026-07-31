@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { requestMeta } from '@/modules/audit/request.js'
 import { getAuthSession } from '@/utils/auth.js'
 import { tp } from '@/utils/fastify.js'
+import { problem } from '@/utils/send-problem.js'
 import { requireApiKey } from './guard.js'
 import {
   apiKeyErrorSchema,
@@ -49,7 +50,7 @@ export const apiKeysRoute = tp(async scope => {
       if (!session) {
         return reply
           .status(401)
-          .send({ error: request.t('payment:unauthorized') })
+          .send(problem(request, 401, request.t('payment:unauthorized')))
       }
       if (!session.activeOrganizationId) {
         return reply.status(200).send({ keys: [] })
@@ -89,10 +90,12 @@ export const apiKeysRoute = tp(async scope => {
       if (!session?.activeOrganizationId) {
         return reply
           .status(401)
-          .send({ error: request.t('payment:unauthorized') })
+          .send(problem(request, 401, request.t('payment:unauthorized')))
       }
       if (!(await canManage(session.userId, session.activeOrganizationId))) {
-        return reply.status(403).send({ error: request.t('apiKeys:forbidden') })
+        return reply
+          .status(403)
+          .send(problem(request, 403, request.t('apiKeys:forbidden')))
       }
       const { token, record } = await apiKeys.create({
         organizationId: session.activeOrganizationId,
@@ -140,10 +143,12 @@ export const apiKeysRoute = tp(async scope => {
       if (!session?.activeOrganizationId) {
         return reply
           .status(401)
-          .send({ error: request.t('payment:unauthorized') })
+          .send(problem(request, 401, request.t('payment:unauthorized')))
       }
       if (!(await canManage(session.userId, session.activeOrganizationId))) {
-        return reply.status(403).send({ error: request.t('apiKeys:forbidden') })
+        return reply
+          .status(403)
+          .send(problem(request, 403, request.t('apiKeys:forbidden')))
       }
       const revoked = await apiKeys.revoke(
         session.activeOrganizationId,

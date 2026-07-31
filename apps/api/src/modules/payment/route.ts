@@ -2,6 +2,8 @@ import { enqueue } from '@/jobs/index.js'
 import { getAuthenticatedUserId, getAuthSession } from '@/utils/auth.js'
 import { tp } from '@/utils/fastify.js'
 import type { AppTFunction } from '@/utils/i18n.js'
+import { rateLimitProfiles } from '@/utils/rate-limit.js'
+import { problem } from '@/utils/send-problem.js'
 import {
   isPaymentEnabled,
   isWebhookSecretValid,
@@ -54,20 +56,20 @@ export const paymentRoute = tp(async scope => {
       if (!isPaymentEnabled) {
         return reply
           .status(503)
-          .send({ error: request.t('payment:notConfigured') })
+          .send(problem(request, 503, request.t('payment:notConfigured')))
       }
       const userId = await getAuthenticatedUserId(scope, request)
       if (!userId) {
         return reply
           .status(401)
-          .send({ error: request.t('payment:unauthorized') })
+          .send(problem(request, 401, request.t('payment:unauthorized')))
       }
       try {
         const pix = await payment.createPixQrCode(request.body, userId)
         return reply.status(200).send(pix)
       } catch (error) {
-        const { status, body } = paymentErrorReply(error, request.t)
-        return reply.status(status).send(body)
+        const { status, detail } = paymentErrorReply(error, request.t)
+        return reply.status(status).send(problem(request, status, detail))
       }
     },
   )
@@ -93,20 +95,20 @@ export const paymentRoute = tp(async scope => {
       if (!isPaymentEnabled) {
         return reply
           .status(503)
-          .send({ error: request.t('payment:notConfigured') })
+          .send(problem(request, 503, request.t('payment:notConfigured')))
       }
       const userId = await getAuthenticatedUserId(scope, request)
       if (!userId) {
         return reply
           .status(401)
-          .send({ error: request.t('payment:unauthorized') })
+          .send(problem(request, 401, request.t('payment:unauthorized')))
       }
       try {
         const checkout = await payment.createCheckout(request.body, userId)
         return reply.status(200).send(checkout)
       } catch (error) {
-        const { status, body } = paymentErrorReply(error, request.t)
-        return reply.status(status).send(body)
+        const { status, detail } = paymentErrorReply(error, request.t)
+        return reply.status(status).send(problem(request, status, detail))
       }
     },
   )
@@ -133,20 +135,20 @@ export const paymentRoute = tp(async scope => {
       if (!isPaymentEnabled) {
         return reply
           .status(503)
-          .send({ error: request.t('payment:notConfigured') })
+          .send(problem(request, 503, request.t('payment:notConfigured')))
       }
       const userId = await getAuthenticatedUserId(scope, request)
       if (!userId) {
         return reply
           .status(401)
-          .send({ error: request.t('payment:unauthorized') })
+          .send(problem(request, 401, request.t('payment:unauthorized')))
       }
       try {
         const record = await payment.getPayment(request.params.id, userId)
         if (!record) {
           return reply
             .status(404)
-            .send({ error: request.t('payment:notFound') })
+            .send(problem(request, 404, request.t('payment:notFound')))
         }
         return reply.status(200).send({
           id: record.id,
@@ -159,8 +161,8 @@ export const paymentRoute = tp(async scope => {
           url: record.url,
         })
       } catch (error) {
-        const { status, body } = paymentErrorReply(error, request.t)
-        return reply.status(status).send(body)
+        const { status, detail } = paymentErrorReply(error, request.t)
+        return reply.status(status).send(problem(request, status, detail))
       }
     },
   )
@@ -183,7 +185,7 @@ export const paymentRoute = tp(async scope => {
       if (!session) {
         return reply
           .status(401)
-          .send({ error: request.t('payment:unauthorized') })
+          .send(problem(request, 401, request.t('payment:unauthorized')))
       }
       const payments = await payment.listForUserAndOrg(
         session.userId,
@@ -215,6 +217,11 @@ export const paymentRoute = tp(async scope => {
         body: webhookBodySchema,
         response: { 200: webhookResponseSchema, 401: paymentErrorSchema },
       },
+      // Quem chama aqui não é usuário, é o gateway. Um pico de reentregas
+      // legítimas levando 429 faz eventos de cobrança serem descartados — bem
+      // pior que o abuso que o teto global evitaria. A autenticidade vem do
+      // HMAC / do segredo na query, não do rate limit.
+      config: { rateLimit: rateLimitProfiles.webhook },
     },
     async (request, reply) => {
       // Aceita se a assinatura HMAC for válida (integridade) OU o segredo da
@@ -228,7 +235,7 @@ export const paymentRoute = tp(async scope => {
       if (!authenticated) {
         return reply
           .status(401)
-          .send({ error: request.t('payment:invalidSignature') })
+          .send(problem(request, 401, request.t('payment:invalidSignature')))
       }
       // Processa fora do request: com Redis vira job (retries/backoff); sem
       // Redis roda inline (igual antes). O jobId derivado do evento dá
@@ -253,12 +260,12 @@ export const paymentRoute = tp(async scope => {
 function paymentErrorReply(
   error: unknown,
   t: AppTFunction,
-): { status: 500 | 502 | 503; body: { error: string } } {
+): { status: 500 | 502 | 503; detail: string } {
   if (error instanceof PaymentNotConfiguredError) {
-    return { status: 503, body: { error: t('payment:notConfigured') } }
+    return { status: 503, detail: t('payment:notConfigured') }
   }
   if (error instanceof PaymentError) {
-    return { status: 502, body: { error: error.message } }
+    return { status: 502, detail: error.message }
   }
-  return { status: 500, body: { error: t('payment:createFailed') } }
+  return { status: 500, detail: t('payment:createFailed') }
 }

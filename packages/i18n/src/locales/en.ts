@@ -66,6 +66,8 @@ export const en = {
     passwordMin: 'At least {{count}} characters',
     nameMin: 'Please enter your name',
     otp: 'Enter the 6-digit code',
+    invalidRequest: 'Invalid request',
+    internalError: 'Internal server error',
   },
   dashboard: {
     title: 'Dashboard',

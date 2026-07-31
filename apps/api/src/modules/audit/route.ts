@@ -1,5 +1,6 @@
 import { getAuthSession } from '@/utils/auth.js'
 import { tp } from '@/utils/fastify.js'
+import { problem } from '@/utils/send-problem.js'
 import { auditErrorSchema, auditListResponseSchema } from './schemas.js'
 
 /**
@@ -24,7 +25,7 @@ export const auditRoute = tp(async scope => {
       if (!session) {
         return reply
           .status(401)
-          .send({ error: request.t('payment:unauthorized') })
+          .send(problem(request, 401, request.t('payment:unauthorized')))
       }
       if (!session.activeOrganizationId) {
         return reply.status(200).send({ entries: [] })
