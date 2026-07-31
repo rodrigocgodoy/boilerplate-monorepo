@@ -1,0 +1,151 @@
+# Stack completa de produção: Postgres, Redis, migrations, API, worker e app.
+#
+#   cp .env.example .env      # ajuste os segredos
+#   docker compose -f docker-compose.prod.yml up --build -d
+#
+# Um comando sobe tudo. Serve para rodar a aplicação inteira numa VPS ou para
+# validar localmente o que vai para produção.
+#
+# Em plataformas gerenciadas (Railway, Fly, ECS) você normalmente troca
+# `postgres` e `redis` por serviços do provedor e usa imagens de um registry, em
+# vez de construir na máquina. Ver DEPLOYING.md.
+
+name: boilerplate-prod
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?defina DB_PASSWORD no .env}
+      POSTGRES_DB: ${DB_DATABASE:-boilerplate}
+    volumes:
+      - postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${DB_USER:-postgres}']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    # Sem `ports`: o banco só é alcançável pela rede interna do compose. Expor
+    # 5432 na internet é o jeito mais rápido de perder os dados.
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - redis:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # Roda as migrations uma vez e sai. API e worker só sobem depois que este
+  # serviço termina com sucesso (`service_completed_successfully`).
+  #
+  # É o lugar certo para a migration: se ela falhar, o deploy para aqui em vez
+  # de deixar N réplicas em crash loop. Por isso `RUN_MIGRATIONS_ON_START` fica
+  # desligado nos serviços abaixo.
+  migrate:
+    image: boilerplate-api:latest
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+      target: api
+    restart: 'no'
+    command:
+      [
+        'sh',
+        '-c',
+        'cd /app/node_modules/@repo/database && ./node_modules/.bin/prisma migrate deploy --schema prisma/schema.prisma',
+      ]
+    environment:
+      DATABASE_URL: postgresql://${DB_USER:-postgres}:${DB_PASSWORD}@postgres:5432/${DB_DATABASE:-boilerplate}?schema=public
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  api:
+    image: boilerplate-api:latest
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+      target: api
+    restart: unless-stopped
+    ports:
+      - '${API_PORT:-3333}:3333'
+    environment:
+      DATABASE_URL: postgresql://${DB_USER:-postgres}:${DB_PASSWORD}@postgres:5432/${DB_DATABASE:-boilerplate}?schema=public
+      REDIS_URL: redis://redis:6379
+      COOKIE_SECRET: ${COOKIE_SECRET:?defina COOKIE_SECRET no .env}
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?defina BETTER_AUTH_SECRET no .env}
+      BETTER_AUTH_URL: ${BETTER_AUTH_URL:?defina BETTER_AUTH_URL no .env}
+      APP_URL: ${APP_URL:?defina APP_URL no .env}
+      CORS_ORIGINS: ${CORS_ORIGINS:-}
+      # O worker dedicado abaixo processa a fila; a API apenas enfileira.
+      JOBS_IN_PROCESS: 'false'
+      SENTRY_DSN: ${SENTRY_DSN:-}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      EMAIL_FROM: ${EMAIL_FROM:-}
+      ADMIN_EMAILS: ${ADMIN_EMAILS:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+
+  worker:
+    image: boilerplate-worker:latest
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+      target: worker
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://${DB_USER:-postgres}:${DB_PASSWORD}@postgres:5432/${DB_DATABASE:-boilerplate}?schema=public
+      REDIS_URL: redis://redis:6379
+      COOKIE_SECRET: ${COOKIE_SECRET:?defina COOKIE_SECRET no .env}
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?defina BETTER_AUTH_SECRET no .env}
+      BETTER_AUTH_URL: ${BETTER_AUTH_URL:?defina BETTER_AUTH_URL no .env}
+      APP_URL: ${APP_URL:?defina APP_URL no .env}
+      SENTRY_DSN: ${SENTRY_DSN:-}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      EMAIL_FROM: ${EMAIL_FROM:-}
+    # Precisa ser maior que JOBS_SHUTDOWN_TIMEOUT_MS (30s), senão o Docker mata
+    # o worker no meio de um job justamente durante o deploy.
+    stop_grace_period: 40s
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    # Escala independente da API — é o motivo de o worker ser um serviço à parte:
+    #   docker compose -f docker-compose.prod.yml up -d --scale worker=3
+
+  app:
+    image: boilerplate-app:latest
+    build:
+      context: .
+      dockerfile: apps/app/Dockerfile
+      args:
+        # ATENÇÃO: `VITE_*` são assadas no bundle em build time. Mudar aqui
+        # exige `--build-arg`/rebuild — não basta reiniciar o container.
+        VITE_API_URL: ${VITE_API_URL:?defina VITE_API_URL no .env}
+        VITE_SENTRY_DSN: ${VITE_SENTRY_DSN:-}
+        VITE_POSTHOG_KEY: ${VITE_POSTHOG_KEY:-}
+        VITE_POSTHOG_HOST: ${VITE_POSTHOG_HOST:-https://us.i.posthog.com}
+    restart: unless-stopped
+    ports:
+      - '${APP_PORT:-8080}:8080'
+    depends_on:
+      - api
+
+volumes:
+  postgres:
+  redis:

@@ -20,6 +20,9 @@ config({
     path.dirname(fileURLToPath(import.meta.url)),
     '../../../.env',
   ),
+  // Em produção as variáveis vêm do orquestrador, não de um arquivo: o log
+  // "injected env (0) from …/.env" só confundiria quem lê o boot do container.
+  quiet: process.env.NODE_ENV === 'production',
 })
 
 /** Lista separada por vírgula → array de strings limpas. */

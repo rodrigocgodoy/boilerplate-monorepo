@@ -1,0 +1,31 @@
+# Contexto de build = raiz do monorepo. Este arquivo é o que vale para TODAS as
+# imagens (api, worker, app) — ver a nota sobre .dockerignore em DEPLOYING.md.
+
+# Dependências e artefatos: reinstalados/reconstruídos dentro da imagem.
+**/node_modules
+**/dist
+**/.turbo
+**/generated
+packages/api-client/gen
+
+# Testes e relatórios: não entram em imagem de produção.
+**/coverage
+apps/app/playwright-report
+apps/app/test-results
+**/*.test.ts
+**/*.test.tsx
+apps/app/e2e
+
+# Segredos e ruído local.
+**/.env
+!**/.env.example
+**/*.log
+.DS_Store
+
+# Histórico e CI: o build não precisa e o .git costuma ser o maior item do
+# contexto (enviá-lo ao daemon deixa todo build mais lento).
+.git
+.github
+.claude
+.agents
+.serena

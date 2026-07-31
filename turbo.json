@@ -4,7 +4,16 @@
     "build": {
       "dependsOn": ["^build"],
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
-      "outputs": ["dist/**", "gen/**", "generated/**"]
+      "outputs": ["dist/**", "gen/**", "generated/**"],
+      // O Turbo roda as tasks com env **filtrado**. O `prisma generate` do
+      // @repo/database exige `DATABASE_URL` no config (não conecta, só valida),
+      // e sem esta linha ele não a enxerga — localmente passa despercebido
+      // porque o `prisma.config.ts` lê o `.env` do disco, mas dentro do
+      // container (sem `.env`) o build quebra.
+      //
+      // `passThroughEnv` e não `env`: o valor não muda o cliente gerado, então
+      // não deve fazer parte da chave de cache.
+      "passThroughEnv": ["DATABASE_URL"]
     },
     "//#format-and-lint": {},
     "//#format-and-lint:fix": { "cache": false },

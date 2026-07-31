@@ -24,16 +24,20 @@
     "@prisma/adapter-pg": "^7.5.0",
     "@prisma/client": "latest",
     "@prisma/client-runtime-utils": "7.5.0",
-    "@repo/typescript-config": "workspace:*",
     "dotenv": "^17.2.3",
-    "pg": "^8.16.3"
+    "pg": "^8.16.3",
+    "prisma": "latest"
   },
   "devDependencies": {
     "@repo/typescript-config": "workspace:*",
     "@types/pg": "^8.16.0",
-    "prisma": "latest",
     "tsc-alias": "^1.8.16",
     "tsx": "^4.19.1",
     "typescript": "5.5.4"
-  }
+  },
+  "files": [
+    "dist",
+    "generated",
+    "prisma"
+  ]
 }
