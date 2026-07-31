@@ -12,7 +12,7 @@ Ponto de partida enxuto para SaaS: auth pronta, geração de client tipado a par
 - **packages/database** — Prisma + adapter-pg (somente modelos do Better Auth).
 - **packages/ui** — primitivos shadcn + tokens neutros (OKLCH) fáceis de editar.
 - **packages/utils** — `auth-client` + resolução de URL da API.
-- **packages/{biome-config,typescript-config}** — configs compartilhadas.
+- **packages/{biome-config,typescript-config,vitest-config}** — configs compartilhadas.
 
 ## Pré-requisitos
 
@@ -45,6 +45,40 @@ Docs da API (Scalar) em `http://localhost:3333/reference` (modo dev).
 4. O app importa os hooks de `@repo/api-client/hooks`.
 
 Sempre que mudar/adicionar uma rota, rode `pnpm openapi && pnpm api-client`.
+
+## Testes
+
+```bash
+pnpm test        # Vitest em todos os workspaces (não precisa de Docker)
+pnpm test:db     # sobe um Postgres efêmero e roda a suíte COMPLETA
+pnpm test:e2e    # E2E real: Postgres + API + app, sem mock
+```
+
+Detalhes e cobertura em [`TESTING.md`](./TESTING.md). As decisões que valem
+explicar:
+
+- **Configuração compartilhada, não copiada.** Os presets do Vitest vivem em
+  `packages/vitest-config` (`base`/`node`/`react`). Cada workspace declara só o
+  que é dele. Config de teste duplicada diverge em silêncio: um workspace ganha
+  uma regra, o outro não, e a diferença só aparece quando um teste falha por
+  motivo errado.
+- **A suíte roda sem infra; o banco é opt-in e efêmero.** `pnpm test` funciona
+  numa máquina sem Docker (os testes de integração se pulam). Quando o banco
+  entra, ele é um container próprio em `tmpfs`, numa porta própria, criado e
+  destruído pelo comando — os testes nunca alcançam o banco de desenvolvimento,
+  e não existe estado sobrevivente entre execuções.
+- **Um E2E que roda de verdade.** `auth-flow.spec.ts` faz cadastro → dashboard
+  contra API e Postgres reais, sem um único mock. É o único teste capaz de
+  afirmar que a corrente Zod → OpenAPI → Kubb → React está inteira; dez specs
+  com a rede mockada não afirmam isso. Os smokes mockados continuam existindo
+  para quem quer feedback rápido sem Docker.
+- **Rede mockada em teste unitário.** `apps/app` mocka `@repo/api-client` e o
+  `auth-client`. Teste unitário que faz I/O é lento, some quando a rede oscila e
+  transforma falha de ambiente em falha de código.
+- **Cobertura como diagnóstico, não como meta.** O relatório conta todos os
+  arquivos (`all: true`), então o número global é baixo de propósito — ele mostra
+  o que não é testado em vez de premiar quem testa o trivial. O alvo é o caminho
+  crítico (login, dashboard, `GET /me`, auth), que está entre 85% e 97%.
 
 ## Customização
 

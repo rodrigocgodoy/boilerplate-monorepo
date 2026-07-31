@@ -8,7 +8,11 @@
     "build": "turbo run build",
     "dev": "turbo run dev",
     "test": "turbo run test",
-    "test:e2e": "pnpm --filter app test:e2e",
+    "test:watch": "turbo run test:watch --concurrency 20",
+    "test:coverage": "turbo run test:coverage",
+    "test:db": "tsx scripts/test-db.ts pnpm turbo run test",
+    "test:db:coverage": "tsx scripts/test-db.ts pnpm turbo run test:coverage",
+    "test:e2e": "tsx scripts/test-db.ts pnpm --filter @repo/app test:e2e",
     "lint": "biome check .",
     "lint:fix": "biome check . --write",
     "dep-up": "docker compose up -d",
@@ -23,12 +27,14 @@
     "worker": "pnpm --filter @repo/api worker",
     "auth:generate": "pnpm --filter @repo/api auth:generate",
     "openapi": "pnpm --filter @repo/api exec tsx src/scripts/generate-openapi.ts",
-    "api-client": "pnpm --filter @repo/api-client build"
+    "api-client": "pnpm --filter @repo/api-client build",
+    "test:e2e:smoke": "pnpm --filter @repo/app test:e2e"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.3.11",
     "@repo/biome-config": "workspace:*",
     "@types/node": "^20.18.0",
+    "@vitest/coverage-v8": "3.2.4",
     "prisma": "latest",
     "tsx": "^4.19.1",
     "turbo": "^2.7.6"
