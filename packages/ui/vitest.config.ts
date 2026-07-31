@@ -1,11 +1,4 @@
-import react from '@vitejs/plugin-react'
-import { defineConfig } from 'vitest/config'
+import { reactConfig } from '@repo/vitest-config/react'
 
-export default defineConfig({
-  plugins: [react()],
-  test: {
-    environment: 'jsdom',
-    setupFiles: ['./test/setup.ts'],
-    include: ['test/**/*.test.{ts,tsx}'],
-  },
-})
+// jsdom, plugin de React e os matchers do jest-dom vêm do preset compartilhado.
+export default reactConfig

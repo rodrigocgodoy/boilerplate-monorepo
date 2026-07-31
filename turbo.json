@@ -10,7 +10,25 @@
     "//#format-and-lint:fix": { "cache": false },
     "test": {
       "dependsOn": ["^build"],
-      "outputs": []
+      "outputs": [],
+      // O Turbo roda as tasks com um env **filtrado**: variável não declarada
+      // aqui simplesmente não chega no processo. Sem esta linha, o
+      // `TEST_DATABASE_URL` de `pnpm test:db` se perde e os `*.int.test.ts` se
+      // auto-pulam — a suíte fica verde sem ter tocado no banco.
+      // Declarar também faz parte da chave de cache, que é o correto: rodar
+      // com e sem banco são execuções diferentes.
+      "env": ["TEST_DATABASE_URL", "DATABASE_URL", "CI"]
+    },
+    "test:coverage": {
+      "dependsOn": ["^build"],
+      "outputs": ["coverage/**"],
+      "env": ["TEST_DATABASE_URL", "DATABASE_URL", "CI"]
+    },
+    "test:watch": {
+      "cache": false,
+      "persistent": true,
+      "dependsOn": ["^build"],
+      "env": ["TEST_DATABASE_URL", "DATABASE_URL", "CI"]
     },
     "dev": {
       "cache": false,

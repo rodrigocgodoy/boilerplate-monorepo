@@ -1,0 +1,15 @@
+{
+  "extends": "@repo/typescript-config/base.json",
+  "compilerOptions": {
+    // Este pacote é consumido como **fonte** pelo carregador de config do Vite,
+    // que externaliza workspaces e os carrega como ESM nativo do Node. Nesse
+    // modo a extensão no import é obrigatória (`./base.ts`), então o TS precisa
+    // aceitá-la. Nada aqui é emitido — a fonte é o artefato.
+    "allowImportingTsExtensions": true,
+    "noEmit": true,
+    "declaration": false,
+    "declarationMap": false
+  },
+  "include": ["**/*.ts"],
+  "exclude": ["node_modules"]
+}

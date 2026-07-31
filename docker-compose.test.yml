@@ -1,0 +1,35 @@
+# Banco **efêmero** para testes de integração e E2E.
+#
+# Isolado do banco de desenvolvimento em três eixos, de propósito: container
+# próprio, porta própria (55432 — alta o bastante para não brigar com o
+# Postgres de outro projeto na sua máquina; sobrescreva com `TEST_DB_PORT`) e
+# **sem volume** — os dados vivem em `tmpfs`
+# (RAM). Um `docker compose -f docker-compose.test.yml down` leva tudo junto, e
+# nenhum teste consegue alcançar o Postgres de dev por acidente.
+#
+# Não suba isto à mão: `pnpm test:db` (ou `pnpm test:e2e`) cuida de up,
+# migrations e teardown. Ver TESTING.md.
+
+services:
+  postgres-test:
+    image: postgres:16-alpine
+    container_name: boilerplate-postgres-test
+    # `fsync=off` + `synchronous_commit=off`: durabilidade não importa num banco
+    # que é destruído ao fim da suíte, e o ganho no TRUNCATE/insert é grande.
+    command: postgres -c fsync=off -c synchronous_commit=off -c full_page_writes=off
+    ports:
+      - '${TEST_DB_PORT:-55432}:5432'
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: boilerplate_test
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d boilerplate_test']
+      interval: 1s
+      timeout: 5s
+      retries: 30
+    logging:
+      options:
+        max-size: 10m
