@@ -8,6 +8,10 @@
 **/generated
 packages/api-client/gen
 
+# Source maps: são gerados no build dentro da imagem; o que estiver no disco
+# local não deve entrar no contexto.
+**/*.map
+
 # Testes e relatórios: não entram em imagem de produção.
 **/coverage
 apps/app/playwright-report

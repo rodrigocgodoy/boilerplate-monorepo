@@ -7,8 +7,8 @@
     "dev": "tsx --enable-source-maps --watch src/index.ts | pino-pretty",
     "worker": "tsx --enable-source-maps --watch src/worker.ts | pino-pretty",
     "build": "tsc && tsc-alias && tsc -p tsconfig.test.json",
-    "start": "node --import ./dist/instrument.js dist/index.js",
-    "start:worker": "node --import ./dist/instrument.js dist/worker.js",
+    "start": "node --enable-source-maps --import ./dist/instrument.js dist/index.js",
+    "start:worker": "node --enable-source-maps --import ./dist/instrument.js dist/worker.js",
     "test": "vitest run",
     "test:watch": "vitest",
     "auth:generate": "npx @better-auth/cli generate --config ./src/utils/auth.ts --output ../../packages/database/prisma/schema.prisma --yes",
@@ -42,6 +42,7 @@
     "fastify-type-provider-zod": "^6.1.0",
     "i18next": "^24.2.0",
     "ioredis": "5.10.1",
+    "pino": "^10.3.1",
     "zod": "^4.3.6"
   },
   "devDependencies": {

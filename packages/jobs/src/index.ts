@@ -16,6 +16,11 @@ import type { ZodType } from 'zod'
 export type JobLogger = {
   info: (msg: string) => void
   error: (msg: string, err?: unknown) => void
+  /**
+   * Cria um logger que carrega campos fixos em toda linha (assinatura do Pino).
+   * Opcional: um logger simples continua funcionando, só sem correlação.
+   */
+  child?: (bindings: Record<string, unknown>) => JobLogger
 }
 
 const noopLogger: JobLogger = { info: () => {}, error: () => {} }
@@ -274,6 +279,15 @@ export function createJobRunner<H extends JobHandlers>(
       worker = new Worker(
         queueName,
         async job => {
+          // Todo log deste job carrega `jobId` e `job`. É o que permite pegar
+          // uma falha no worker e reconstruir o que aconteceu: sem isso, as
+          // linhas de N jobs processados em paralelo se misturam no stdout sem
+          // nada que as separe. O `jobId` é o mesmo que o produtor conhece
+          // (passado em `opts.jobId` nos webhooks), então liga request → job.
+          const log = logger.child?.({ jobId: job.id, job: job.name }) ?? logger
+          const startedAt = Date.now()
+          log.info('[jobs] processando')
+
           const handler = handlers[job.name]
           if (!handler) throw new Error(`Job desconhecido: ${job.name}`)
 
@@ -293,12 +307,14 @@ export function createJobRunner<H extends JobHandlers>(
           }
 
           await invoke(handler, parsed.data)
+          log.info(`[jobs] concluído em ${Date.now() - startedAt}ms`)
         },
         { connection: workerConnection },
       )
 
       worker.on('failed', async (job, err) => {
-        logger.error(`[jobs] "${job?.name}" falhou`, err)
+        const log = logger.child?.({ jobId: job?.id, job: job?.name }) ?? logger
+        log.error(`[jobs] falhou (tentativa ${job?.attemptsMade ?? '?'})`, err)
         if (!job) return
 
         // O evento `failed` dispara a cada tentativa. Só vai para a DLQ quando

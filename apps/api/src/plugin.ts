@@ -5,7 +5,6 @@ import helmet from '@fastify/helmet'
 import rateLimit from '@fastify/rate-limit'
 import FastifySensible from '@fastify/sensible'
 import fastifySwagger from '@fastify/swagger'
-import { prisma } from '@repo/database'
 import { defaultLocale, type Locale } from '@repo/i18n'
 import fastifyScalar from '@scalar/fastify-api-reference'
 import * as Sentry from '@sentry/node'
@@ -21,8 +20,10 @@ import { servicePlugin } from '@/services.js'
 import { env } from '@/utils/environment.js'
 import { registerErrorHandler } from '@/utils/error-handler.js'
 import { tp } from '@/utils/fastify.js'
+import { registerHealthRoutes } from '@/utils/health.js'
 import { type AppTFunction, getT, resolveLanguage } from '@/utils/i18n.js'
 import { rateLimitRedis } from '@/utils/rate-limit.js'
+import { registerTracing } from '@/utils/tracing.js'
 
 declare module 'fastify' {
   interface FastifyRequest {
@@ -207,6 +208,9 @@ export const backendPlugin = tp(async app => {
   // como Problem Details (RFC 9457). Ver `utils/problem.ts`.
   registerErrorHandler(app)
 
+  // Liga log ↔ Sentry: trace_id em cada linha da request. No-op sem DSN.
+  registerTracing(app)
+
   // Services
   await app.register(servicePlugin)
 
@@ -228,20 +232,7 @@ export const backendPlugin = tp(async app => {
   // Routes
   await app.register(routesPlugin)
 
-  // Health check
-  app.get('/health', { schema: { hide: true } }, async (_, reply) => {
-    try {
-      await prisma.$executeRaw`SELECT 1`
-      return reply.status(200).send({
-        status: 'healthy',
-        services: { database: { status: 'healthy' } },
-      })
-    } catch (error) {
-      app.log.error({ error }, 'Health check failed')
-      return reply.status(503).send({
-        status: 'unhealthy',
-        services: { database: { status: 'unhealthy' } },
-      })
-    }
-  })
+  // Liveness (`/health`) e readiness (`/ready`) — ver utils/health.ts para a
+  // diferença e por que misturá-las causa crash loop numa queda de banco.
+  registerHealthRoutes(app)
 })
