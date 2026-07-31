@@ -4,7 +4,10 @@
   "type": "module",
   "private": true,
   "exports": {
-    ".": "./src/index.ts"
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./dist/index.js"
+    }
   },
   "dependencies": {
     "bullmq": "^5.34.0",
@@ -14,5 +17,9 @@
   "devDependencies": {
     "@repo/typescript-config": "workspace:*",
     "typescript": "5.5.4"
+  },
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist .turbo"
   }
 }

@@ -4,7 +4,10 @@
   "type": "module",
   "private": true,
   "exports": {
-    "./*": "./src/*.ts"
+    "./*": {
+      "types": "./src/*.ts",
+      "default": "./dist/*.js"
+    }
   },
   "dependencies": {
     "@repo/env": "workspace:*",
@@ -13,5 +16,9 @@
   "devDependencies": {
     "@repo/typescript-config": "workspace:*",
     "typescript": "5.5.4"
+  },
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist .turbo"
   }
 }
