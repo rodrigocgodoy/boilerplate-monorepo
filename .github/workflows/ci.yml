@@ -130,17 +130,17 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      # Gera os hooks do Kubb (packages/api-client/gen é gitignored) — o app
-      # importa @repo/api-client/hooks ao subir o dev server.
-      - name: Gerar api-client
-        run: pnpm --filter @repo/api-client build
+      # A API roda via tsx (fonte), mas importa `@repo/database` e
+      # `@repo/emails` pelo **dist** — sem build, ela nem sobe. O `build` do
+      # Turbo tem `dependsOn: ["^build"]`, então filtrar por `@repo/api` já
+      # constrói todas as deps de workspace dela (e o `prisma generate` vem
+      # junto, no build do database). `@repo/api-client` entra porque o `gen/` é
+      # gitignored e o app importa os hooks ao subir o Vite.
+      - name: Build das dependências (API + api-client)
+        run: pnpm build --filter=@repo/api --filter=@repo/api-client
 
       - name: Instalar browser do Playwright
         run: pnpm --filter app exec playwright install --with-deps chromium
-
-      # A API do E2E roda via tsx contra o Prisma Client, que precisa existir.
-      - name: Gerar Prisma Client
-        run: pnpm db:generate
 
       - name: Aplicar migrations (DB do E2E)
         run: pnpm --filter @repo/database exec prisma migrate deploy
