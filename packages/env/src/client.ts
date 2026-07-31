@@ -20,6 +20,9 @@ export const clientEnvSchema = z.object({
   // Observabilidade (Sentry) — vazio = desligado.
   VITE_SENTRY_DSN: z.string().default(''),
   VITE_SENTRY_ENVIRONMENT: z.string().default(''),
+  // Release tracking do front. Precisa bater com a release usada no upload dos
+  // source maps, senão o Sentry não consegue desminificar o stack trace.
+  VITE_SENTRY_RELEASE: z.string().default(''),
   VITE_SENTRY_TRACES_SAMPLE_RATE: z.coerce.number().min(0).max(1).default(0),
   // Product analytics (PostHog) — vazio = desligado.
   VITE_POSTHOG_KEY: z.string().default(''),

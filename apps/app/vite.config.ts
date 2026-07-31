@@ -39,6 +39,17 @@ export default defineConfig(({ mode }) => {
     build: {
       outDir: './dist',
       emptyOutDir: true,
+      // `hidden`: gera os `.map` mas NÃO adiciona o comentário
+      // `//# sourceMappingURL` no bundle. Assim o Sentry consegue desminificar
+      // o stack trace depois do upload, sem que o código-fonte fique servido
+      // publicamente para quem abrir o devtools.
+      //
+      // Faça o upload no deploy e **não publique** os `.map`:
+      //   npx @sentry/cli sourcemaps inject --org X --project Y dist
+      //   npx @sentry/cli sourcemaps upload --org X --project Y \
+      //     --release "$VITE_SENTRY_RELEASE" dist
+      // Ver DEPLOYING.md.
+      sourcemap: 'hidden',
     },
     server: {
       host: '0.0.0.0',

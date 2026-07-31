@@ -18,9 +18,43 @@ export function initObservability(): void {
     dsn,
     environment:
       env.VITE_SENTRY_ENVIRONMENT || process.env.NODE_ENV || 'production',
+    // Precisa bater com a release usada no upload dos source maps, senão o
+    // Sentry mostra o stack trace minificado — que é o mesmo que nada.
+    release: env.VITE_SENTRY_RELEASE || undefined,
     integrations: [Sentry.browserTracingIntegration()],
     tracesSampleRate: env.VITE_SENTRY_TRACES_SAMPLE_RATE,
+    sendDefaultPii: false,
+    beforeSend(event) {
+      // O front não deveria anexar segredo a evento nenhum, mas a URL entra
+      // automaticamente — e o `?redirect=` do login pode carregar caminho de
+      // convite, enquanto um reset de senha pode trazer o código na query.
+      if (event.request?.url) {
+        try {
+          const url = new URL(event.request.url)
+          for (const key of [...url.searchParams.keys()]) {
+            if (/token|otp|secret|code|key/i.test(key)) {
+              url.searchParams.set(key, '[REDACTED]')
+            }
+          }
+          event.request.url = url.toString()
+        } catch {
+          // URL não parseável: melhor remover do que enviar às cegas.
+          event.request.url = undefined
+        }
+      }
+      return event
+    },
   })
+}
+
+/**
+ * Identifica o usuário nos eventos. Só o `id`: e-mail e nome são dados
+ * pessoais, e `sendDefaultPii` está desligado de propósito. O id basta para
+ * saber quantos usuários um erro atingiu.
+ */
+export function setObservabilityUser(userId: string | null): void {
+  if (!dsn) return
+  Sentry.setUser(userId ? { id: userId } : null)
 }
 
 function Fallback() {

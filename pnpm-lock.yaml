@@ -117,6 +117,9 @@ importers:
       ioredis:
         specifier: 5.10.1
         version: 5.10.1
+      pino:
+        specifier: ^10.3.1
+        version: 10.3.1
       zod:
         specifier: ^4.3.6
         version: 4.4.3

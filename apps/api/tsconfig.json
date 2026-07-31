@@ -5,6 +5,10 @@
     "module": "ESNext",
     "moduleResolution": "Bundler",
     "baseUrl": ".",
+    // Source maps no build: sem eles o stack trace de produção aponta para a
+    // linha do JS compilado, que não existe no repositório — inútil para
+    // depurar. O `--enable-source-maps` nos scripts `start` faz o Node usá-los.
+    "sourceMap": true,
     "outDir": "./dist",
     "rootDir": "./src",
     "paths": {

@@ -590,50 +590,100 @@ cancelou assinatura…). Módulo `apps/api/src/modules/audit` + model `AuditLogs
 
 ---
 
-## Observabilidade (Sentry)
+## Observabilidade (Pino + Sentry)
 
-Captura de erros + traces distribuídos (API e app) e logs com `requestId`.
-Segue a filosofia do boilerplate: **funciona sem infra** — sem DSN é no-op.
+Log estruturado, correlação entre log e rastro, captura de erros e probes de
+saúde. Segue a filosofia do boilerplate: **funciona sem infra** — sem DSN, o
+Sentry é no-op; o log continua funcionando sempre.
 
-**Ativar:**
+### Log (Pino)
 
-1. Crie projetos no [Sentry](https://sentry.io) (um para Node/API, um para o
-   browser/app) e copie os DSNs.
-2. **.env** — preencha `SENTRY_DSN` (API) e `VITE_SENTRY_DSN` (app). Opcional:
-   `SENTRY_TRACES_SAMPLE_RATE` / `VITE_SENTRY_TRACES_SAMPLE_RATE` (0..1, default
-   0 = só erros) e `*_ENVIRONMENT`.
-3. Pronto. Sem DSN, nada é inicializado nem enviado.
+O Pino já é o logger nativo do Fastify, então ele é **configurado**, não
+substituído. A config vive em `apps/api/src/utils/logger.ts` e é compartilhada
+com o worker — dois formatos de log obrigam o agregador a ter dois parsers, e
+metade dos campos acaba não indexada.
 
-**Como funciona:**
+- **JSON estruturado** por padrão; `pino-pretty` **só em desenvolvimento** (ele
+  custa CPU e destrói o parsing de quem consome).
+- **Redaction obrigatória.** `authorization`, `cookie`, `set-cookie`,
+  `x-api-key` e qualquer `password`/`token`/`secret`/`otp`/`keyHash`/`apiKey`
+  em qualquer profundidade viram `[REDACTED]`.
+  > Por que importa: log vai para um agregador de terceiros, fica meses retido e
+  > é lido por gente que não precisaria daquele dado. Um `authorization` ali é
+  > credencial válida em texto puro; o cookie de sessão permite personificar o
+  > usuário — e não expira quando ele troca a senha.
+  >
+  > Adicionou um campo sensível ao domínio? Inclua em `REDACTED_PATHS`. O teste
+  > `logger-redaction.test.ts` trava a lista.
+- **`requestId`** em toda linha da request (`reqId`), gerado ou herdado do
+  header `x-request-id`, e devolvido na resposta e no corpo dos erros.
+- **`trace_id` do Sentry** em toda linha, quando há DSN — é o que liga o log ao
+  evento no Sentry nos dois sentidos.
+- **Worker:** mesmo formato e mesma redaction (antes era `console.info`, texto
+  solto e sem proteção nenhuma, num processo que manipula payload de e-mail).
+  Cada linha carrega `jobId` e `job`, então dá para reconstruir um job
+  específico no meio de N processados em paralelo.
 
-- **API (`@sentry/node`, v10):** o SDK é **baseado em OpenTelemetry** e
-  **auto-instrumenta Fastify, Prisma e HTTP** — cobre os "traces distribuídos"
-  sem um SDK OTel separado. O init fica em `apps/api/src/instrument.ts`
-  (importado como **1º import** de `index.ts`/`worker.ts` e, em produção, via
-  `node --import ./dist/instrument.js`, já nos scripts `start`). A captura de
-  erros é ligada com `Sentry.setupFastifyErrorHandler(app)` (hook `onError` — não
-  altera o formato das respostas).
-- **`requestId`:** o Fastify gera/honra `x-request-id` (`genReqId` +
-  `requestIdHeader`); aparece em **todo log** da request (`reqId`) e como header
-  `x-request-id` na resposta — correlaciona logs ↔ Sentry ↔ cliente.
-- **App (`@sentry/react`):** `initObservability()` em `main.tsx` (no-op sem
-  `VITE_SENTRY_DSN`) + `<ObservabilityBoundary>` (Sentry `ErrorBoundary` com
-  fallback) envolvendo a árvore.
-- **Logs estruturados:** pino (default do Fastify) com nível em `API_LOG_LEVEL`;
-  em dev, formatado por `pino-pretty`.
+### Sentry
 
-**Testar:** em dev, `GET /debug/sentry` (rota só de desenvolvimento) lança um
-erro de propósito — com DSN configurado, ele aparece no Sentry.
+**Ativar:** crie projetos no [Sentry](https://sentry.io) (um Node, um browser) e
+preencha `SENTRY_DSN` / `VITE_SENTRY_DSN`. Sem DSN, nada inicializa.
 
-**Atenção:**
+- **API/worker:** `@sentry/node` v10, baseado em OpenTelemetry — auto-instrumenta
+  Fastify, Prisma e HTTP, cobrindo traces distribuídos sem SDK separado. Init em
+  `instrument.ts` (1º import; em produção via `node --import`).
+- **App:** `@sentry/react` + `browserTracingIntegration` + `ObservabilityBoundary`.
+- **`beforeSend` filtra antes de enviar.** Headers, cookies e query string são
+  limpos; qualquer chave que pareça senha/token/segredo vira `[REDACTED]`,
+  recursivamente. O `sendDefaultPii: false` cobre o óbvio, mas não o que a
+  aplicação anexa em `extra` — o corpo de um webhook, por exemplo. No front, os
+  query params sensíveis da URL também são mascarados.
+- **Contexto de usuário:** só o `id`, nos dois lados. E-mail e nome são dados
+  pessoais sem contrapartida num relatório de erro; o id já responde "quantos
+  usuários isso atingiu".
+- **Release tracking:** `SENTRY_RELEASE` / `VITE_SENTRY_RELEASE`. Injete o SHA
+  do commit no deploy — vazio, tudo cai numa release só e some a informação de
+  qual deploy quebrou.
+- **Amostragem:** `SENTRY_TRACES_SAMPLE_RATE` (0..1, default 0 = só erros).
 
-- Para um backend de tracing **não-Sentry** (ex.: Grafana Tempo/Jaeger via
-  OTLP), adicione um `@opentelemetry/sdk-node` + exporter — o Sentry v10 já usa
-  OTel por baixo, então dá para compor.
-- `@sentry/react` adiciona peso ao bundle; se precisar, carregue sob demanda
-  (dynamic import) quando o DSN estiver presente.
+### Source maps
 
----
+Gerados nos dois builds: `sourceMap: true` no `tsc` da API (com
+`--enable-source-maps` no `start`) e `sourcemap: 'hidden'` no Vite.
+
+`hidden` significa que os `.map` existem mas **não** são referenciados pelo
+bundle — o Sentry desminifica após o upload, e o código-fonte não fica servido
+para quem abrir o devtools. A imagem do app apaga os `.map` antes de servir.
+
+O upload é passo de deploy, com o CLI oficial e sem dependência no repositório:
+
+```bash
+npx @sentry/cli sourcemaps inject --org SUA_ORG --project SEU_PROJ dist
+npx @sentry/cli sourcemaps upload --org SUA_ORG --project SEU_PROJ \
+  --release "$VITE_SENTRY_RELEASE" dist
+```
+
+> Optamos por não adicionar `@sentry/vite-plugin`: ele seria no-op para quem não
+> usa Sentry e exigiria um token de auth em build time. Se você usa Sentry a
+> sério e quer o upload automático no build, o plugin é a escolha certa —
+> instale-o e configure com a mesma release.
+
+### Health e readiness
+
+Duas rotas, porque orquestradores fazem duas perguntas diferentes:
+
+- **`/health` (liveness)** — "o processo está são?" Responder mal faz o
+  orquestrador **reiniciar** o container. Não toca em dependência nenhuma, de
+  propósito.
+- **`/ready` (readiness)** — "posso receber tráfego?" Verifica Postgres e (se
+  configurado) Redis. Responder mal só **tira do balanceador**.
+
+Misturar as duas é o erro comum, e o sintoma é caro: uma queda de banco de 30
+segundos vira uma frota inteira em crash loop — e reiniciar não traz banco de
+volta. O `HEALTHCHECK` do Docker usa `/ready`, porque é ele que libera os
+serviços dependentes (`depends_on: service_healthy`).
+
+**Testar o Sentry:** em dev, `GET /debug/sentry` lança um erro de propósito.
 
 ## API keys (acesso programático)
 

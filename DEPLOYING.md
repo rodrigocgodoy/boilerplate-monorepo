@@ -44,6 +44,27 @@ O frontend é um bundle estático: `VITE_API_URL` e companhia entram no código 
 trocar a URL da API — cada ambiente exige seu próprio build. É a causa nº 1 de
 "o app em produção está chamando a API de staging".
 
+### Observabilidade no deploy
+
+Duas coisas que só fazem sentido no momento do deploy:
+
+- **Release tracking** — injete o SHA do commit: `SENTRY_RELEASE=$(git rev-parse HEAD)`
+  na API/worker e `VITE_SENTRY_RELEASE` no build do app (é build-arg, como todo
+  `VITE_*`). Sem isso, todos os erros caem numa release só e some a informação
+  de qual deploy quebrou.
+- **Source maps** — gerados no build (`sourcemap: 'hidden'` no Vite,
+  `sourceMap: true` no tsc). Faça o upload a partir do artefato de build, **antes**
+  de construir a imagem, e não publique os `.map`:
+
+  ```bash
+  npx @sentry/cli sourcemaps inject --org SUA_ORG --project SEU_PROJ apps/app/dist
+  npx @sentry/cli sourcemaps upload --org SUA_ORG --project SEU_PROJ \
+    --release "$VITE_SENTRY_RELEASE" apps/app/dist
+  ```
+
+**Probes:** aponte liveness para `/health` e readiness para `/ready`. Trocá-las
+faz uma queda de banco reiniciar a frota em vez de só tirá-la do balanceador.
+
 ## Imagens
 
 ```bash
