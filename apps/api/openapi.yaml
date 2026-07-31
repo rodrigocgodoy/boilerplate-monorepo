@@ -18,6 +18,7 @@
   "paths": {
     "/me": {
       "get": {
+        "operationId": "getCurrentUser",
         "summary": "Retorna o usuário autenticado",
         "tags": [
           "Me"
@@ -131,6 +132,7 @@
     },
     "/payments/pix": {
       "post": {
+        "operationId": "createPixCharge",
         "summary": "Cria uma cobrança PIX (QR Code)",
         "tags": [
           "Payment"
@@ -471,6 +473,7 @@
     },
     "/payments/checkout": {
       "post": {
+        "operationId": "createCheckout",
         "summary": "Cria um checkout (PIX + cartão)",
         "tags": [
           "Payment"
@@ -846,6 +849,7 @@
     },
     "/payments/{id}": {
       "get": {
+        "operationId": "getPayment",
         "summary": "Retorna o status de uma cobrança",
         "tags": [
           "Payment"
@@ -1228,6 +1232,7 @@
     },
     "/payments": {
       "get": {
+        "operationId": "listPayments",
         "summary": "Histórico de pagamentos (usuário + organização ativa)",
         "tags": [
           "Payment"
@@ -1384,6 +1389,7 @@
     },
     "/plans": {
       "get": {
+        "operationId": "listPlans",
         "summary": "Lista os planos disponíveis",
         "tags": [
           "Subscription"
@@ -1530,6 +1536,7 @@
     },
     "/subscription": {
       "get": {
+        "operationId": "getSubscription",
         "summary": "Retorna a assinatura da organização ativa",
         "tags": [
           "Subscription"
@@ -1737,6 +1744,7 @@
         }
       },
       "post": {
+        "operationId": "subscribeToPlan",
         "summary": "Assina um plano (na organização ativa)",
         "tags": [
           "Subscription"
@@ -2131,6 +2139,7 @@
     },
     "/subscription/cancel": {
       "post": {
+        "operationId": "cancelSubscription",
         "summary": "Cancela a assinatura da organização ativa",
         "tags": [
           "Subscription"
@@ -2502,6 +2511,7 @@
     },
     "/premium": {
       "get": {
+        "operationId": "getPremiumFeature",
         "summary": "Feature de exemplo que exige plano ativo",
         "tags": [
           "Subscription"
@@ -2645,6 +2655,7 @@
     },
     "/entitlements": {
       "get": {
+        "operationId": "getEntitlements",
         "summary": "Uso e limites do plano da organização ativa",
         "tags": [
           "Entitlements"
@@ -2787,6 +2798,7 @@
     },
     "/entitlements/track": {
       "post": {
+        "operationId": "trackUsage",
         "summary": "Consome uma métrica medida (metering) respeitando a quota",
         "tags": [
           "Entitlements"
@@ -3051,6 +3063,7 @@
     },
     "/audit": {
       "get": {
+        "operationId": "listAuditLogs",
         "summary": "Trilha de auditoria da organização ativa",
         "tags": [
           "Audit"
@@ -3210,6 +3223,7 @@
     },
     "/api-keys": {
       "get": {
+        "operationId": "listApiKeys",
         "summary": "Lista as API keys da organização ativa",
         "tags": [
           "ApiKeys"
@@ -3354,6 +3368,7 @@
         }
       },
       "post": {
+        "operationId": "createApiKey",
         "summary": "Cria uma API key (owner/admin) — token exibido uma vez",
         "tags": [
           "ApiKeys"
@@ -3544,6 +3559,7 @@
     },
     "/api-keys/{id}": {
       "delete": {
+        "operationId": "revokeApiKey",
         "summary": "Revoga uma API key (owner/admin)",
         "tags": [
           "ApiKeys"
@@ -3697,6 +3713,7 @@
     },
     "/v1/ping": {
       "get": {
+        "operationId": "pingWithApiKey",
         "summary": "Exemplo autenticado por API key (Bearer)",
         "tags": [
           "ApiKeys"
@@ -3792,6 +3809,7 @@
     },
     "/notifications": {
       "get": {
+        "operationId": "listNotifications",
         "summary": "Notificações do usuário + contagem de não lidas",
         "tags": [
           "Notifications"
@@ -3932,6 +3950,7 @@
     },
     "/notifications/{id}/read": {
       "post": {
+        "operationId": "markNotificationRead",
         "summary": "Marca uma notificação como lida",
         "tags": [
           "Notifications"
@@ -4034,6 +4053,7 @@
     },
     "/notifications/read-all": {
       "post": {
+        "operationId": "markAllNotificationsRead",
         "summary": "Marca todas as notificações como lidas",
         "tags": [
           "Notifications"
@@ -4126,6 +4146,7 @@
     },
     "/notifications/preferences": {
       "get": {
+        "operationId": "getNotificationPreferences",
         "summary": "Preferências de notificação do usuário",
         "tags": [
           "Notifications"
@@ -4229,6 +4250,7 @@
         }
       },
       "put": {
+        "operationId": "updateNotificationPreferences",
         "summary": "Atualiza as preferências de notificação",
         "tags": [
           "Notifications"
@@ -4370,6 +4392,7 @@
     },
     "/notifications/test": {
       "post": {
+        "operationId": "sendTestNotification",
         "summary": "Dispara uma notificação de teste para o próprio usuário",
         "tags": [
           "Notifications"
@@ -4462,6 +4485,7 @@
     },
     "/uploads/avatar": {
       "post": {
+        "operationId": "createAvatarUpload",
         "summary": "Gera um upload pré-assinado para o avatar (S3)",
         "tags": [
           "Storage"

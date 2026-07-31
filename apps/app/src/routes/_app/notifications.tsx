@@ -1,10 +1,10 @@
 import {
-  useGetNotifications,
-  useGetNotificationsPreferences,
-  usePostNotificationsIdRead,
-  usePostNotificationsReadAll,
-  usePostNotificationsTest,
-  usePutNotificationsPreferences,
+  useGetNotificationPreferences,
+  useListNotifications,
+  useMarkAllNotificationsRead,
+  useMarkNotificationRead,
+  useSendTestNotification,
+  useUpdateNotificationPreferences,
 } from '@repo/api-client/hooks'
 import { Badge } from '@repo/ui/components/badge'
 import { Button } from '@repo/ui/components/button'
@@ -40,12 +40,12 @@ type Prefs = Record<string, Channels>
 function NotificationsPage() {
   const { t, i18n } = useTranslation('notifications')
   const qc = useQueryClient()
-  const { data, isLoading } = useGetNotifications()
-  const prefsQuery = useGetNotificationsPreferences()
-  const markRead = usePostNotificationsIdRead()
-  const markAll = usePostNotificationsReadAll()
-  const sendTest = usePostNotificationsTest()
-  const savePrefs = usePutNotificationsPreferences()
+  const { data, isLoading } = useListNotifications()
+  const prefsQuery = useGetNotificationPreferences()
+  const markRead = useMarkNotificationRead()
+  const markAll = useMarkAllNotificationsRead()
+  const sendTest = useSendTestNotification()
+  const savePrefs = useUpdateNotificationPreferences()
 
   const items = data?.data.notifications ?? []
   const [prefs, setPrefs] = useState<Prefs>({})

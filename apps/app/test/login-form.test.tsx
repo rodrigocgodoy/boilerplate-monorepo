@@ -60,7 +60,15 @@ describe('LoginForm', () => {
     await user.click(screen.getByRole('button', { name: 'Entrar' }))
 
     // A validação é do Zod, via zodResolver — o mesmo schema do resto do app.
-    expect(await screen.findByText(/e-?mail/i)).toBeInTheDocument()
+    //
+    // A asserção é por `role="alert"`, que o `<FieldError/>` do `@repo/ui`
+    // aplica: além de ser um seletor preciso (o texto do erro casaria também
+    // com o label do campo), é o que faz o leitor de tela anunciar o problema.
+    // O padrão anterior — um `<p className="text-destructive">` — era invisível
+    // para tecnologia assistiva.
+    const alerts = await screen.findAllByRole('alert')
+    expect(alerts.length).toBeGreaterThan(0)
+    expect(alerts.map(a => a.textContent).join(' ')).toMatch(/e-?mail/i)
     expect(signIn).not.toHaveBeenCalled()
   })
 

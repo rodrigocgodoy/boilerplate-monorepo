@@ -1,4 +1,4 @@
-import { usePostUploadsAvatar } from '@repo/api-client/hooks'
+import { useCreateAvatarUpload } from '@repo/api-client/hooks'
 import { Avatar, AvatarFallback, AvatarImage } from '@repo/ui/components/avatar'
 import { Button } from '@repo/ui/components/button'
 import { authClient } from '@repo/utils/auth-client'
@@ -18,7 +18,7 @@ export function AvatarUpload() {
   const { t } = useTranslation('storage')
   const qc = useQueryClient()
   const { data: session } = authClient.useSession()
-  const presign = usePostUploadsAvatar()
+  const presign = useCreateAvatarUpload()
   const inputRef = useRef<HTMLInputElement>(null)
   const [busy, setBusy] = useState(false)
 

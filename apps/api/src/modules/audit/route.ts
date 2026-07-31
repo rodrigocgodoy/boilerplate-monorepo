@@ -16,6 +16,7 @@ export const auditRoute = tp(async scope => {
     {
       schema: {
         tags: ['Audit'],
+        operationId: 'listAuditLogs',
         summary: 'Trilha de auditoria da organização ativa',
         response: { 200: auditListResponseSchema, 401: auditErrorSchema },
       },

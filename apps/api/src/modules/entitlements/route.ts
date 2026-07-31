@@ -22,6 +22,7 @@ export const entitlementsRoute = tp(async scope => {
     {
       schema: {
         tags: ['Entitlements'],
+        operationId: 'getEntitlements',
         summary: 'Uso e limites do plano da organização ativa',
         response: {
           200: entitlementsResponseSchema,
@@ -51,6 +52,7 @@ export const entitlementsRoute = tp(async scope => {
     {
       schema: {
         tags: ['Entitlements'],
+        operationId: 'trackUsage',
         summary: 'Consome uma métrica medida (metering) respeitando a quota',
         body: trackBodySchema,
         response: {

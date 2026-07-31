@@ -1,4 +1,4 @@
-import { useGetPaymentsId, usePostPaymentsPix } from '@repo/api-client/hooks'
+import { useCreatePixCharge, useGetPayment } from '@repo/api-client/hooks'
 import { Badge } from '@repo/ui/components/badge'
 import { Button } from '@repo/ui/components/button'
 import {
@@ -31,10 +31,10 @@ function Billing() {
   const [amount, setAmount] = useState('10,00')
   const [pix, setPix] = useState<CreatedPix | null>(null)
 
-  const createPix = usePostPaymentsPix()
+  const createPix = useCreatePixCharge()
 
   // Polling do status enquanto a cobrança não for paga/expirada.
-  const statusQuery = useGetPaymentsId(pix?.id ?? '', {
+  const statusQuery = useGetPayment(pix?.id ?? '', {
     query: {
       enabled: !!pix,
       refetchInterval: query =>

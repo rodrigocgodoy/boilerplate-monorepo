@@ -15,6 +15,7 @@
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
+    "@ebay/nice-modal-react": "^1.2.13",
     "@hookform/resolvers": "^5.2.2",
     "@repo/api-client": "workspace:*",
     "@repo/env": "workspace:*",

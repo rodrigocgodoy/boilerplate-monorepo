@@ -1,4 +1,4 @@
-import { useGetPremium } from '@repo/api-client/hooks'
+import { useGetPremiumFeature } from '@repo/api-client/hooks'
 import {
   Card,
   CardContent,
@@ -21,7 +21,7 @@ export const Route = createFileRoute('/_app/_paid/premium')({
 
 function Premium() {
   const { t } = useTranslation('subscription')
-  const { data, isLoading } = useGetPremium()
+  const { data, isLoading } = useGetPremiumFeature()
 
   return (
     <div className="mx-auto flex w-full max-w-md flex-1 flex-col gap-6 p-6">
