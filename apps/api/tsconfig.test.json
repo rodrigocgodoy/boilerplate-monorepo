@@ -1,0 +1,18 @@
+{
+  // Type-check dos testes. Não dá para simplesmente incluí-los no
+  // `tsconfig.json`: lá o `rootDir` é `./src` (por causa do `outDir`), e `test/`
+  // está fora dele. Este config não emite nada — só valida.
+  //
+  // Sem isso, um teste mal tipado passa despercebido até quebrar em runtime:
+  // foi assim que uma chamada a `createJobRunner` sem `schemas` sobreviveu ao
+  // `pnpm build`.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "declaration": false,
+    "declarationMap": false,
+    "rootDir": "."
+  },
+  "include": ["src/**/*", "test/**/*"],
+  "exclude": ["node_modules", "dist"]
+}
