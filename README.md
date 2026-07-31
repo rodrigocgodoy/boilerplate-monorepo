@@ -176,6 +176,23 @@ Fila BullMQ sobre Redis, com worker que escala separado da API. Guia completo em
 
 ---
 
+## Deploy
+
+```bash
+cp .env.example .env
+docker compose -f docker-compose.prod.yml up --build -d
+```
+
+Sobe Postgres, Redis, migrations, API, worker e app. Guia completo — incluindo Railway, Fly.io, VPS e ECS com comparativo de esforço e custo — em [`DEPLOYING.md`](./DEPLOYING.md).
+
+**O boilerplate não escolhe onde você hospeda.** Infraestrutura é a camada mais opinativa que existe, e a decisão certa depende de time, orçamento e tolerância a operação — coisas que um boilerplate não sabe. O que ele entrega é o caminho pronto para qualquer destino: imagens multi-stage com usuário não-root e healthcheck, uma stack que sobe com um comando, e a lista do que precisa existir em todo lugar.
+
+**Infraestrutura como código fica fora deste repositório, de propósito.** Terraform e provisionamento pertencem a um repositório próprio: embutir o IaC de um provedor escolheria por quem clona, a infraestrutura muda em ritmo diferente do da aplicação, e state de Terraform carrega segredo em texto puro — nada disso deveria conviver com código de aplicação.
+
+**API e worker compartilham a imagem**, em dois alvos com `CMD` diferente. Os handlers de job usam os serviços da API, então separar em duas imagens duplicaria o build inteiro para trocar uma linha. Escalam de forma independente do mesmo jeito (`--scale worker=3`).
+
+---
+
 ## Segurança e ambiente
 
 **Configuração inválida derruba o boot, não o primeiro request.** `packages/env` valida tudo com Zod na subida — API, worker e app. Variável faltando descoberta em produção vira 500 intermitente difícil de rastrear; falhar imediatamente com o nome da variável custa segundos. A mensagem lista todos os problemas de uma vez (corrigir um por deploy é o pior jeito de achar os outros) e **omite o valor de variáveis sensíveis**, porque o log de boot costuma acabar num agregador.
@@ -227,6 +244,7 @@ A ideia é que o agente conheça as convenções do monorepo antes da primeira i
 - [`ROADMAP.md`](./ROADMAP.md) — o que ainda está previsto
 - [`TESTING.md`](./TESTING.md) — estratégia e execução de testes
 - [`UPGRADES.md`](./UPGRADES.md) — como adicionar Redis, storage, e-mail e outros serviços
+- [`DEPLOYING.md`](./DEPLOYING.md) — imagens Docker e opções de hospedagem, com comparativo
 
 ## Licença
 
