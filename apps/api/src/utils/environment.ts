@@ -68,6 +68,11 @@ const envSchema = z.object({
     .string()
     .default('true')
     .transform(v => ['true', '1', 'yes', 'on'].includes(v.toLowerCase())),
+  // Teto de tempo do shutdown gracioso do worker: quanto ele espera o job em
+  // andamento terminar antes de ser morto à força. Precisa ser maior que o job
+  // mais lento que você tolera perder no meio. Ajuste ao seu orquestrador —
+  // Kubernetes mata em 30s por padrão (`terminationGracePeriodSeconds`).
+  JOBS_SHUTDOWN_TIMEOUT_MS: z.coerce.number().int().positive().default(30_000),
   // Observabilidade (Sentry) — opcional. Vazio = desligado (no-op): nada é
   // enviado. Preencha o DSN para capturar erros e traces. Ver UPGRADES.md.
   SENTRY_DSN: z.string().default(''),

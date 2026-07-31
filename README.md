@@ -159,6 +159,22 @@ Vitest para unit e integração, Playwright para o caminho crítico. Estratégia
 
 ---
 
+## Jobs em background
+
+Fila BullMQ sobre Redis, com worker que escala separado da API. Guia completo em [`UPGRADES.md`](./UPGRADES.md); as decisões que valem explicar:
+
+**Funciona sem Redis.** Sem `REDIS_URL`, `enqueue` roda o handler inline. Quem clona o repositório consegue rodar a aplicação inteira sem subir infraestrutura, e o mesmo código vira fila de verdade quando a variável existe. O que **não** muda entre os modos é a validação: dev mais frouxo que produção só adia o erro para o deploy.
+
+**Payload é contrato, validado com Zod.** Todo job declara um schema, e o tipo do handler é derivado dele — não há anotação paralela para divergir. O mapa de schemas é mapeado sobre os handlers, então esquecer um é erro de compilação. A validação roda no `enqueue` (falha no produtor, onde o stack trace acusa quem errou) e de novo na entrada do worker, porque ali o payload atravessou processo **e tempo**: um job enfileirado ontem pode ser consumido por um worker que subiu hoje. O tipo garante a forma; o schema garante o conteúdo — `to: 'nao-e-email'` é uma `string` perfeitamente bem tipada.
+
+**Falha definitiva não evapora.** Job que esgota as tentativas vai para uma dead-letter queue dedicada com payload original, erro e número de tentativas. Nada consome dela: é registro durável, inspecionável no painel e reprocessável com `replayDeadLetters()`, que revalida contra o schema atual antes de reenfileirar. Payload inválido não gasta retry — vira `UnrecoverableError` e vai direto para a DLQ, porque tentar de novo não conserta um payload malformado.
+
+**O painel usa a autenticação que já existe.** Bull Board em `/admin/queues`, atrás da mesma role de plataforma que guarda o `/admin`. Ele expõe payloads reais — e-mails, corpos de webhook, ids de usuário —, então merece o mesmo nível de proteção do resto da área administrativa, e não uma senha básica paralela que ninguém rotaciona. Quem não é admin recebe 404: o painel não confirma a própria existência.
+
+**O worker termina o que começou.** `stop()` fecha o worker sem `force`, e o teto de tempo é configurável (`JOBS_SHUTDOWN_TIMEOUT_MS`, default 30s) para caber na janela do orquestrador. Matar o processo no meio de um job devolve ele à fila: em handler idempotente isso é desperdício, nos demais é efeito duplicado.
+
+---
+
 ## Customização
 
 - **Cores e tokens:** `packages/ui/src/styles/globals.css` — variáveis `--*` em `:root` e `.dark`

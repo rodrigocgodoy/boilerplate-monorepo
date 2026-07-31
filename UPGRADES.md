@@ -44,21 +44,86 @@ sem infra**.
 **Como funciona:**
 
 - **Sem `REDIS_URL`** — `enqueue(...)` roda o handler **inline** (síncrono). O app
-  funciona em dev sem fila/worker.
+  funciona em dev sem fila/worker. O payload continua sendo validado: o modo dev
+  não pode ser mais frouxo que produção, senão o erro só aparece no deploy.
 - **Com `REDIS_URL`** — vira fila de verdade: `enqueue` publica no Redis e o worker
   processa com **retries + backoff exponencial** (3 tentativas por padrão). Jobs
-  **agendados** (cron) via `upsertJobScheduler`.
+  **agendados** (cron) via `upsertJobScheduler`, **dead-letter queue** e painel
+  de inspeção.
 
 **Ativar:**
 
 1. **.env** — preencha `REDIS_URL` (`pnpm dep-up` sobe o Redis).
 2. Pronto. A API sobe o worker in-process por padrão (`JOBS_IN_PROCESS=true`).
 
+### Contratos: payload validado com Zod
+
+Todo job tem um **schema Zod obrigatório** (`apps/api/src/jobs/schemas.ts`), no
+mesmo padrão dos módulos da API. O tipo do handler é derivado do schema
+(`z.infer`), então schema e tipo não podem divergir — e o mapa `JobSchemas` é
+mapeado sobre os handlers: **esquecer um schema é erro de compilação**.
+
+A validação acontece nas duas pontas, e cada uma pega um problema diferente:
+
+- **No `enqueue`** — falha no produtor, onde o stack trace aponta para quem
+  errou, em vez de horas depois dentro do worker.
+- **Na entrada do worker** — o payload atravessou processo *e tempo*: um job
+  enfileirado ontem pode ser consumido por um worker que subiu hoje, com outra
+  versão do código. Payload que não bate com o schema atual vira
+  `UnrecoverableError` e vai direto para a DLQ, sem queimar as tentativas
+  restantes — retry não conserta payload malformado.
+
+> O tipo garante a **forma** do payload; o schema garante o **conteúdo**. Um
+> `to: 'nao-e-email'` é uma `string` perfeitamente bem tipada.
+
+### Dead-letter queue
+
+Job que esgota as tentativas (ou falha de forma irrecuperável) é registrado numa
+fila dedicada, `<fila>-dlq`, com o payload original, a mensagem do erro e o
+número de tentativas. Nada consome dessa fila — ela é o **registro durável** do
+que falhou de vez.
+
+```ts
+await jobs.listDeadLetters()      // inspecionar
+await jobs.replayDeadLetters()    // devolver para a fila principal
+```
+
+O `replay` revalida o payload contra o schema atual: se a DLQ guardou algo que o
+contrato de hoje recusa, o replay para ali em vez de reenfileirar lixo.
+
+As falhas recentes também continuam na fila principal (`removeOnFail: 5000`), que
+é o que dá o botão **Retry** nativo do Bull Board.
+
+### Bull Board (inspeção das filas)
+
+Painel em **`/admin/queues`** — jobs ativos, falhos, agendados e a DLQ.
+
+Protegido pela **role de plataforma** (`admin`, do plugin admin do Better Auth):
+a mesma que guarda o `/admin` no front. O painel expõe payloads de jobs — e-mails,
+corpos de webhook, ids de usuário — então precisa do mesmo nível de proteção do
+resto da área administrativa, e não de uma senha básica paralela que ninguém
+rotaciona. Quem não é admin recebe **404**, não 403: o painel não confirma a
+própria existência para quem não deveria alcançá-lo.
+
+Só é montado quando há `REDIS_URL`. Para virar admin, use `ADMIN_EMAILS`.
+
+### Graceful shutdown
+
+`jobs.stop()` fecha o worker sem `force`, então o BullMQ **espera o job em
+andamento terminar**. O teto de tempo é o `JOBS_SHUTDOWN_TIMEOUT_MS` (default
+30s) — ajuste-o abaixo do limite do seu orquestrador (no Kubernetes, o padrão de
+`terminationGracePeriodSeconds` é 30s).
+
+> Cuidado ao mexer: o `delay` do `close-with-grace` é o orçamento **total** até o
+> kill forçado, não uma folga depois do handler.
+
 **O que já existe:**
 
 - Job **`email`** — despacha **todos** os e-mails (verificação, reset, convite,
   billing) via `@repo/emails`. Os hooks do Better Auth e o billing chamam
   `enqueue('email', { template, … })` — com Redis, todo envio ganha retries.
+  Sem `RESEND_API_KEY`, o `@repo/emails` loga em vez de enviar (adapter de dev),
+  então o job funciona ponta a ponta sem provedor configurado.
 - Jobs **`subscription-webhook`** e **`billing-webhook`** — a rota
   `POST /payments/webhook` valida o HMAC e enfileira **todo** evento: os
   `subscription.*` no primeiro e a **cobrança avulsa** (`billing.*` / PIX) no
@@ -72,18 +137,27 @@ sem infra**.
   o trial como expirado em tempo real (via `trialEndsAt`); este job mantém o
   estado coerente no banco.
 
-**Adicionar um job:**
+**Adicionar uma fila / job novo:**
 
-1. Crie o handler em `apps/api/src/jobs/handlers.ts` (a chave vira o nome do job).
-2. Dispare com `enqueue('meu-job', payload)` de qualquer lugar da API.
-3. Para agendar, adicione `{ job: 'meu-job', pattern: '<cron>' }` em `schedules`
-   (`apps/api/src/jobs/index.ts`).
+1. **Schema** — declare o contrato do payload em `apps/api/src/jobs/schemas.ts`
+   e exporte o tipo (`z.infer`). Sem payload? Use `noPayloadSchema`.
+2. **Handler** — crie em `apps/api/src/jobs/handlers.ts` tipando o parâmetro com
+   o tipo do schema. A chave do mapa vira o nome do job.
+3. **Registro** — adicione o schema ao mapa `schemas` em
+   `apps/api/src/jobs/index.ts`. Se esquecer, o TypeScript reclama.
+4. **Dispare** com `enqueue('meu-job', payload)` de qualquer lugar da API.
+   Para deduplicar, passe `{ jobId }` — o mesmo `jobId` não entra duas vezes.
+5. **Agendado?** Adicione `{ job: 'meu-job', pattern: '<cron>' }` em `schedules`.
+6. **Fila separada?** Um `createJobRunner` com outro `queueName` — útil quando um
+   job pesado não pode competir por worker com os rápidos. Cada runner tem a sua
+   DLQ (`<fila>-dlq`) e aparece no Bull Board.
 
 **Worker dedicado (produção):** para escalar, rode o worker num processo separado
 com `pnpm worker` (`node dist/worker.js` em prod) e setando `JOBS_IN_PROCESS=false`
-na API — assim a API só enfileira e o worker processa.
-
----
+na API — assim a API só enfileira e o worker processa. Ele vive em
+`apps/api/src/worker.ts` (entrypoint, não app separado) porque os handlers usam
+os serviços da API; em produção é a mesma imagem com outro comando, e as réplicas
+escalam de forma independente.
 
 ## MinIO / S3 (uploads de arquivos)
 
