@@ -89,12 +89,12 @@ describe('Problem Details', () => {
   })
 
   it('resposta com corpo próprio não é remarcada pelo hook', async () => {
-    // `/health` tem corpo próprio (`{status, services}`) e responde 200 com
+    // `/ready` tem corpo próprio (`{status, services}`) e responde 200 com
     // banco ou 503 sem — por isso a asserção não fixa o status. O que importa é
     // que o hook decide pelo **formato do corpo**, não pelo status: marcar como
     // `problem+json` toda resposta de erro mentiria sobre as que não seguem o
     // contrato.
-    const res = await app.inject({ method: 'GET', url: '/health' })
+    const res = await app.inject({ method: 'GET', url: '/ready' })
 
     expect(res.headers['content-type']).not.toContain('problem+json')
     expect(res.json()).not.toHaveProperty('type')

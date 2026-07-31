@@ -7,6 +7,7 @@ import closeWithGrace from 'close-with-grace'
 import fastify from 'fastify'
 import { backendPlugin } from './plugin.js'
 import { env } from './utils/environment.js'
+import { loggerOptions } from './utils/logger.js'
 
 // Ensures this file is not executed in test context
 if (process.env.NODE_TEST_CONTEXT) {
@@ -19,9 +20,9 @@ if (!isMainThread) {
 }
 
 const app = fastify({
-  logger: {
-    level: env.API_LOG_LEVEL,
-  },
+  // Nível, redaction e pino-pretty (só em dev) vêm de `utils/logger.ts`,
+  // compartilhados com o worker.
+  logger: loggerOptions,
   // requestId: honra um `x-request-id` recebido (correlação entre serviços) ou
   // gera um UUID. Aparece em todo log da request (`reqId`) e nas respostas de
   // erro 5xx, facilitando rastrear no Sentry/logs.

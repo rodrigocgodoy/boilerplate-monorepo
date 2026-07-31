@@ -33,14 +33,15 @@ const appServer = {
 }
 
 /**
- * API real apontada para o banco de teste. O `/health` consulta o Postgres, ou
- * seja, só responde 200 quando a stack inteira está de pé — é o sinal de
- * readiness certo, melhor que esperar a porta abrir.
+ * API real apontada para o banco de teste. `/ready` consulta o Postgres, ou
+ * seja, só responde 200 quando a stack inteira está de pé — é o sinal certo,
+ * melhor que esperar a porta abrir. (`/health` é liveness pura e responderia
+ * 200 mesmo sem banco.)
  */
 const apiServer = {
   command: 'pnpm --filter @repo/api exec tsx src/index.ts',
   cwd: rootDir,
-  url: `http://localhost:${API_PORT}/health`,
+  url: `http://localhost:${API_PORT}/ready`,
   reuseExistingServer: !process.env.CI,
   timeout: 120_000,
   env: {

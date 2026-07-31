@@ -20,7 +20,18 @@ export const clientEnvSchema = z.object({
   // Observabilidade (Sentry) — vazio = desligado.
   VITE_SENTRY_DSN: z.string().default(''),
   VITE_SENTRY_ENVIRONMENT: z.string().default(''),
+  // Release tracking do front. Precisa bater com a release usada no upload dos
+  // source maps, senão o Sentry não consegue desminificar o stack trace.
+  VITE_SENTRY_RELEASE: z.string().default(''),
   VITE_SENTRY_TRACES_SAMPLE_RATE: z.coerce.number().min(0).max(1).default(0),
+  // Amostragem do Session Replay para sessões **sem** erro. 0 = desligado
+  // (default): o replay do Sentry grava só quando há exceção, e o replay de
+  // produto fica com o PostHog. Ver `observability.tsx`.
+  VITE_SENTRY_REPLAY_SESSION_SAMPLE_RATE: z.coerce
+    .number()
+    .min(0)
+    .max(1)
+    .default(0),
   // Product analytics (PostHog) — vazio = desligado.
   VITE_POSTHOG_KEY: z.string().default(''),
   VITE_POSTHOG_HOST: z.url().default('https://us.i.posthog.com'),
@@ -39,6 +50,8 @@ const source = {
   VITE_SENTRY_DSN: process.env.VITE_SENTRY_DSN,
   VITE_SENTRY_ENVIRONMENT: process.env.VITE_SENTRY_ENVIRONMENT,
   VITE_SENTRY_TRACES_SAMPLE_RATE: process.env.VITE_SENTRY_TRACES_SAMPLE_RATE,
+  VITE_SENTRY_REPLAY_SESSION_SAMPLE_RATE:
+    process.env.VITE_SENTRY_REPLAY_SESSION_SAMPLE_RATE,
   VITE_POSTHOG_KEY: process.env.VITE_POSTHOG_KEY,
   VITE_POSTHOG_HOST: process.env.VITE_POSTHOG_HOST,
 }

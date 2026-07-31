@@ -97,10 +97,12 @@ USER fastify
 
 EXPOSE 3333
 
-# `/health` consulta o banco, então o healthcheck cobre a stack, não só o
-# processo. `start-period` dá folga para a primeira conexão e as migrations.
+# Usa `/ready`, não `/health`: o healthcheck do Docker é o que libera os
+# serviços dependentes (`depends_on: service_healthy`), ou seja, semântica de
+# **readiness** — precisa considerar banco e Redis. `/health` é liveness pura
+# (ver apps/api/src/utils/health.ts).
 HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=3 \
-  CMD curl -fsS http://localhost:${PORT}/health || exit 1
+  CMD curl -fsS http://localhost:${PORT}/ready || exit 1
 
 # `--import instrument.js` liga o Sentry antes do app (no-op sem SENTRY_DSN).
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
