@@ -19,8 +19,10 @@ import { registerQueueBoard } from '@/modules/queues/board.js'
 import { routesPlugin } from '@/routes.js'
 import { servicePlugin } from '@/services.js'
 import { env } from '@/utils/environment.js'
+import { registerErrorHandler } from '@/utils/error-handler.js'
 import { tp } from '@/utils/fastify.js'
 import { type AppTFunction, getT, resolveLanguage } from '@/utils/i18n.js'
+import { rateLimitRedis } from '@/utils/rate-limit.js'
 
 declare module 'fastify' {
   interface FastifyRequest {
@@ -159,26 +161,51 @@ export const backendPlugin = tp(async app => {
     parseOptions: {},
   })
 
-  // Rate limit (in-memory; veja UPGRADES.md para storage distribuído via Redis)
+  // ── Rate limit ────────────────────────────────────────────────────────────
+  // Teto global por IP. As rotas com perfil diferente sobrescrevem via
+  // `config.rateLimit` na própria definição (ver `rate-limit.ts`):
+  //   • `/auth/*` — o Better Auth já aplica limites próprios e bem mais
+  //     restritos (3 tentativas de login por 10s), então aqui só existe o teto.
+  //   • webhook — folgado: 429 num pico de reentrega faz o gateway desistir de
+  //     eventos de pagamento, que é pior do que o abuso que o limite evitaria.
+  //   • export LGPD — apertado: cada chamada varre várias tabelas.
+  //
+  // Com Redis, o contador é compartilhado entre réplicas. Em memória (default),
+  // cada instância conta sozinha: com N réplicas o limite efetivo vira N× e
+  // zera a cada deploy — aceitável em dev, frágil como defesa em produção.
   await app.register(rateLimit, {
-    max: 100,
+    max: env.RATE_LIMIT_MAX,
     timeWindow: '1 minute',
+    ...(rateLimitRedis ? { redis: rateLimitRedis } : {}),
   })
 
   // Helmet
   await app.register(helmet)
 
-  // CORS
+  // ── CORS ──────────────────────────────────────────────────────────────────
+  // Lista explícita, vinda do env validado. Antes era `origin: true`, que
+  // **reflete a origem da requisição** — combinado com `credentials: true`,
+  // isso autoriza qualquer site a chamar a API com o cookie de sessão do
+  // usuário logado. É pior que `*`, porque o browser bloqueia `*` com
+  // credenciais, mas aceita a origem refletida.
+  const allowedOrigins =
+    env.CORS_ORIGINS.length > 0 ? env.CORS_ORIGINS : [env.APP_URL]
+
   app.register(fastifyCors, {
-    origin: true,
+    origin: allowedOrigins,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
     maxAge: 86400,
   })
+  app.log.info(`[cors] origens autorizadas: ${allowedOrigins.join(', ')}`)
 
   // Http errors helpers
   await app.register(FastifySensible)
+
+  // Error handler global: todo erro lançado (validação Zod, 404, 429, 5xx) sai
+  // como Problem Details (RFC 9457). Ver `utils/problem.ts`.
+  registerErrorHandler(app)
 
   // Services
   await app.register(servicePlugin)

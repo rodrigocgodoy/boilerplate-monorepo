@@ -7,6 +7,7 @@
     "./*": "./src/*.ts"
   },
   "dependencies": {
+    "@repo/env": "workspace:*",
     "better-auth": "^1.5.4"
   },
   "devDependencies": {

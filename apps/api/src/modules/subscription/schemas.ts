@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { problemSchema } from '@/utils/problem.js'
 
 export const planSchema = z.object({
   id: z.string(),
@@ -79,6 +80,8 @@ export const paymentHistoryResponseSchema = z.object({
   payments: z.array(paymentHistoryItemSchema),
 })
 
-export const subscriptionErrorSchema = z.object({
-  error: z.string(),
-})
+/**
+ * Erros deste módulo seguem Problem Details (RFC 9457), igual ao resto da
+ * API. O alias mantém o nome já usado nas rotas. Ver `utils/problem.ts`.
+ */
+export const subscriptionErrorSchema = problemSchema

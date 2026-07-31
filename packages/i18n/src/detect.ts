@@ -1,4 +1,4 @@
-import { defaultLocale, type Locale, locales } from './config'
+import { defaultLocale, type Locale, locales } from './config.js'
 
 /**
  * Resolve o melhor Locale suportado a partir de um header Accept-Language

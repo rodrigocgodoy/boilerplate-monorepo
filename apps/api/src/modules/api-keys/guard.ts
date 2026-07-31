@@ -1,4 +1,5 @@
 import type { FastifyReply, FastifyRequest } from 'fastify'
+import { problem } from '@/utils/send-problem.js'
 import { hasScope } from './keys.js'
 import type { VerifiedApiKey } from './service.js'
 
@@ -33,16 +34,22 @@ export function requireApiKey(scope?: string) {
   ): Promise<void> => {
     const token = extractToken(request)
     if (!token) {
-      reply.status(401).send({ error: request.t('apiKeys:missing') })
+      reply
+        .status(401)
+        .send(problem(request, 401, request.t('apiKeys:missing')))
       return
     }
     const verified = await request.server.services.apiKeys.verify(token)
     if (!verified) {
-      reply.status(401).send({ error: request.t('apiKeys:invalid') })
+      reply
+        .status(401)
+        .send(problem(request, 401, request.t('apiKeys:invalid')))
       return
     }
     if (!hasScope(verified.scopes, scope)) {
-      reply.status(403).send({ error: request.t('apiKeys:forbidden') })
+      reply
+        .status(403)
+        .send(problem(request, 403, request.t('apiKeys:forbidden')))
       return
     }
     request.apiKey = verified

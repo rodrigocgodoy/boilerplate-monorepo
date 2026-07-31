@@ -1,5 +1,6 @@
 import { getAuthSession } from '@/utils/auth.js'
 import { tp } from '@/utils/fastify.js'
+import { problem } from '@/utils/send-problem.js'
 import {
   entitlementsErrorSchema,
   entitlementsResponseSchema,
@@ -33,7 +34,7 @@ export const entitlementsRoute = tp(async scope => {
       if (!session) {
         return reply
           .status(401)
-          .send({ error: request.t('payment:unauthorized') })
+          .send(problem(request, 401, request.t('payment:unauthorized')))
       }
       if (!session.activeOrganizationId) {
         // Sem org ativa não há escopo de uso — devolve vazio (não é erro).
@@ -65,12 +66,12 @@ export const entitlementsRoute = tp(async scope => {
       if (!session) {
         return reply
           .status(401)
-          .send({ error: request.t('payment:unauthorized') })
+          .send(problem(request, 401, request.t('payment:unauthorized')))
       }
       if (!session.activeOrganizationId) {
         return reply
           .status(400)
-          .send({ error: request.t('subscription:noActiveOrg') })
+          .send(problem(request, 400, request.t('subscription:noActiveOrg')))
       }
       const quota = await entitlements.consume(
         session.activeOrganizationId,
@@ -80,7 +81,7 @@ export const entitlementsRoute = tp(async scope => {
       if (!quota.allowed) {
         return reply
           .status(402)
-          .send({ error: request.t('entitlements:quotaExceeded') })
+          .send(problem(request, 402, request.t('entitlements:quotaExceeded')))
       }
       return reply.status(200).send(quota)
     },

@@ -1,6 +1,6 @@
-import { en } from './locales/en'
-import { es } from './locales/es'
-import { ptBR } from './locales/pt-BR'
+import { en } from './locales/en.js'
+import { es } from './locales/es.js'
+import { ptBR } from './locales/pt-BR.js'
 
 export const resources = {
   'pt-BR': ptBR,

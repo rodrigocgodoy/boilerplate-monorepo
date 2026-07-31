@@ -23,7 +23,16 @@ describe('GET /me', () => {
     const res = await app.inject({ method: 'GET', url: '/me' })
 
     expect(res.statusCode).toBe(401)
-    expect(res.json()).toEqual({ error: expect.any(String) })
+    // Problem Details (RFC 9457) — mesmo formato de todo erro da API.
+    expect(res.headers['content-type']).toContain('application/problem+json')
+    expect(res.json()).toMatchObject({
+      type: 'urn:problem:unauthorized',
+      title: 'Unauthorized',
+      status: 401,
+      detail: expect.any(String),
+      instance: '/me',
+      requestId: expect.any(String),
+    })
   })
 
   it('responde 401 com cookie de sessão inválido', async () => {
@@ -54,7 +63,7 @@ describe('GET /me', () => {
     // …e as três mensagens são de fato diferentes entre si (o i18n não caiu
     // silenciosamente no fallback, que é o jeito clássico desse teste passar
     // sem provar nada).
-    const messages = [ptBR, en, es].map(r => r?.json().error)
+    const messages = [ptBR, en, es].map(r => r?.json().detail)
     expect(new Set(messages).size).toBe(3)
   })
 })

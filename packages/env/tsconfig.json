@@ -1,0 +1,17 @@
+{
+  "extends": "@repo/typescript-config/base.json",
+  "compilerOptions": {
+    // `NodeNext` (e não o `Bundler` do base) porque este pacote é consumido em
+    // **runtime pelo Node** — a API roda `node dist/index.js`, que importa
+    // `@repo/env/server`. Só o NodeNext obriga a extensão explícita nos imports
+    // relativos e a preserva na emissão; com `Bundler`, o TS aceita
+    // `from './parse'`, emite igual, e o Node estoura com ERR_MODULE_NOT_FOUND
+    // — erro que só aparece em produção, nunca em dev (tsx e Vite resolvem).
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "outDir": "dist",
+    "rootDir": "src"
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"]
+}

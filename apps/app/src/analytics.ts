@@ -1,8 +1,9 @@
+import { env } from '@repo/env/client'
 import posthog from 'posthog-js'
 import { useEffect, useState } from 'react'
 
-const key = process.env.VITE_POSTHOG_KEY
-const host = process.env.VITE_POSTHOG_HOST || 'https://us.i.posthog.com'
+const key = env.VITE_POSTHOG_KEY
+const host = env.VITE_POSTHOG_HOST
 
 /** Analytics (PostHog) ligado? (depende de VITE_POSTHOG_KEY). */
 export const analyticsEnabled = Boolean(key)
