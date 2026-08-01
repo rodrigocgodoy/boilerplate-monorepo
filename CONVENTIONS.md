@@ -65,6 +65,9 @@ O arquivo é kebab, mas o **export continua PascalCase/camelCase**.
 - **Comentários em português** (é o idioma do time). Comentário explica **por
   quê**, não o quê: se o código precisa de comentário dizendo o que faz, o
   problema é o código.
+- **Mensagens de commit em inglês** (§9.1). Commit é artefato de código, não de
+  produto: vive no GitHub, é lido por quem clona o repositório e aparece em
+  `git blame` anos depois.
 
 ### 1.4 Renomear com segurança
 
@@ -258,6 +261,50 @@ validado no `enqueue` e de novo no worker — ele atravessa processo **e tempo**
   feature → `dev`, hotfix → `main`, e a Action `sync-main-to-dev` traz a `main`
   de volta automaticamente.
 
+### 9.1 Mensagens de commit — **em inglês**
+
+Commit é artefato de código, e segue a mesma regra dos nomes (§1.3): **inglês**.
+Ele vive no GitHub, é lido por quem clona o repositório sem falar com o time, e
+aparece num `git blame` daqui a dois anos — quando talvez nem você esteja mais
+por perto para traduzir.
+
+> As strings de produto continuam em pt-BR (via `@repo/i18n`) e os comentários
+> de código também. A fronteira é: **o que o usuário lê é português; o que outro
+> desenvolvedor lê fora do editor é inglês.**
+
+**Formato — Conventional Commits:**
+
+```
+<tipo>(<escopo>): <resumo no imperativo, minúscula, sem ponto final>
+
+<corpo: o PORQUÊ da mudança, não o quê — o diff já mostra o quê>
+```
+
+Tipos usados no repositório: `feat`, `fix`, `test`, `refactor`, `docs`, `chore`,
+`perf`, `build`, `ci`.
+
+```
+feat(jobs): validate job payloads with Zod and add a dead-letter queue
+
+Payloads crossed process and time boundaries with no validation: a job
+enqueued by an older deploy could reach a worker running new code and fail
+deep inside the handler instead of at the edge.
+```
+
+**O resumo no imperativo** (`add`, `fix`, `remove` — não `added`/`adds`) porque
+é assim que o próprio git escreve os commits dele: "Merge branch", "Revert
+commit". A mensagem completa a frase *"se aplicado, este commit vai…"*.
+
+**O corpo é onde está o valor.** O diff já mostra o que mudou; a mensagem
+existe para registrar o que o diff não consegue dizer — a alternativa
+descartada, o bug que motivou, a consequência que não é óbvia. Commit sem corpo
+é aceitável quando a mudança é trivial; commit com corpo repetindo o resumo é
+ruído.
+
+**Não é enforçado por tooling.** Um `commitlint` + hook validaria o formato, mas
+não o conteúdo — e o conteúdo é o que importa aqui. Fica como convenção
+revisada em PR.
+
 ---
 
 ## 10. Anti-padrões
@@ -275,4 +322,5 @@ validado no `enqueue` e de novo no worker — ele atravessa processo **e tempo**
 - ❌ Formato de erro próprio por módulo (use Problem Details — §5).
 - ❌ String de UI hardcoded no componente (vai para `@repo/i18n`).
 - ❌ Arquivo novo em `PascalCase`, ou rename só de caixa sem `git mv` de 2 passos.
+- ❌ Mensagem de commit em português, ou resumo no passado (`added` em vez de `add`).
 - ❌ Teste cujo resultado muda conforme o ambiente.
