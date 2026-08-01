@@ -190,7 +190,9 @@ export const backendPlugin = tp(async app => {
   // usuário logado. É pior que `*`, porque o browser bloqueia `*` com
   // credenciais, mas aceita a origem refletida.
   const allowedOrigins =
-    env.CORS_ORIGINS.length > 0 ? env.CORS_ORIGINS : [env.APP_URL]
+    env.CORS_ORIGINS.length > 0
+      ? env.CORS_ORIGINS
+      : [env.APP_URL, env.ADMIN_URL]
 
   app.register(fastifyCors, {
     origin: allowedOrigins,

@@ -17,6 +17,13 @@ export const clientEnvSchema = z.object({
   VITE_API_URL: z.url({
     error: 'precisa ser uma URL completa (ex.: http://localhost:3333)',
   }),
+  // URL do app principal. O painel admin usa para redirecionar depois de
+  // impersonar: impersonar existe para ver o que o usuário vê, e isso acontece
+  // no produto, não no admin.
+  VITE_APP_URL: z.url().default('http://localhost:5173'),
+  // URL do painel administrativo. O app usa ao encerrar uma impersonação:
+  // quem estava impersonando volta para o painel, que é outro app.
+  VITE_ADMIN_URL: z.url().default('http://localhost:5174'),
   // Observabilidade (Sentry) — vazio = desligado.
   VITE_SENTRY_DSN: z.string().default(''),
   VITE_SENTRY_ENVIRONMENT: z.string().default(''),
@@ -47,6 +54,8 @@ export type ClientEnv = z.infer<typeof clientEnvSchema>
  */
 const source = {
   VITE_API_URL: process.env.VITE_API_URL,
+  VITE_APP_URL: process.env.VITE_APP_URL,
+  VITE_ADMIN_URL: process.env.VITE_ADMIN_URL,
   VITE_SENTRY_DSN: process.env.VITE_SENTRY_DSN,
   VITE_SENTRY_ENVIRONMENT: process.env.VITE_SENTRY_ENVIRONMENT,
   VITE_SENTRY_TRACES_SAMPLE_RATE: process.env.VITE_SENTRY_TRACES_SAMPLE_RATE,

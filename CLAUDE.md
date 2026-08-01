@@ -9,6 +9,8 @@ Monorepo boilerplate para SaaS. Use este arquivo como guia ao trabalhar no repo.
 - `apps/app` — Vite + React 19 + TanStack Router/Query. Roteamento file-based em
   `src/routes`: `_auth` (rotas públicas, ex. login) e `_app` (rotas protegidas,
   ex. dashboard). Consome hooks tipados de `@repo/api-client`.
+- `apps/admin` — painel administrativo (app separado, porta 5174). Gestão de
+  usuários e impersonação. Sem i18n: é ferramenta interna.
 - `apps/api` — Fastify + Zod + Better Auth. Toda rota é tipada com Zod
   (`fastify-type-provider-zod`); o `@fastify/swagger` deriva o OpenAPI. Auth em
   `src/modules/better-auth`, rota de exemplo em `src/modules/me`.

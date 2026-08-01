@@ -1,7 +1,7 @@
+import { env } from '@repo/env/client'
 import { Button } from '@repo/ui/components/button'
 import { authClient } from '@repo/utils/auth-client'
 import { useQueryClient } from '@tanstack/react-query'
-import { useRouter } from '@tanstack/react-router'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
@@ -13,7 +13,6 @@ import { useTranslation } from 'react-i18next'
 export function ImpersonationBanner() {
   const { t } = useTranslation('admin')
   const qc = useQueryClient()
-  const router = useRouter()
   const [busy, setBusy] = useState(false)
   const { data: session } = authClient.useSession()
 
@@ -28,7 +27,10 @@ export function ImpersonationBanner() {
     await authClient.admin.stopImpersonating()
     await qc.invalidateQueries({ queryKey: ['session'] })
     setBusy(false)
-    await router.navigate({ to: '/admin' })
+    // O painel é **outro app**, em outra origem — `router.navigate` não alcança.
+    // Antes isto apontava para `/admin` aqui dentro; a rota saiu quando o
+    // painel virou `apps/admin`, e o usuário caía num 404 do router.
+    window.location.href = env.VITE_ADMIN_URL
   }
 
   return (

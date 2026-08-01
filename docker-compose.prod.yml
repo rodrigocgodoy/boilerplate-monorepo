@@ -84,6 +84,9 @@ services:
       BETTER_AUTH_URL: ${BETTER_AUTH_URL:?defina BETTER_AUTH_URL no .env}
       APP_URL: ${APP_URL:?defina APP_URL no .env}
       CORS_ORIGINS: ${CORS_ORIGINS:-}
+      # O painel é outra origem: precisa entrar no trustedOrigins do Better
+      # Auth (CSRF) **e** no CORS. Passar só num dos dois dá 403 no login.
+      ADMIN_URL: ${ADMIN_URL:?defina ADMIN_URL no .env}
       # O worker dedicado abaixo processa a fila; a API apenas enfileira.
       JOBS_IN_PROCESS: 'false'
       SENTRY_DSN: ${SENTRY_DSN:-}
@@ -137,12 +140,35 @@ services:
         # ATENÇÃO: `VITE_*` são assadas no bundle em build time. Mudar aqui
         # exige `--build-arg`/rebuild — não basta reiniciar o container.
         VITE_API_URL: ${VITE_API_URL:?defina VITE_API_URL no .env}
+        # Para onde o banner volta ao encerrar uma impersonação.
+        VITE_ADMIN_URL: ${VITE_ADMIN_URL:-http://localhost:8081}
         VITE_SENTRY_DSN: ${VITE_SENTRY_DSN:-}
         VITE_POSTHOG_KEY: ${VITE_POSTHOG_KEY:-}
         VITE_POSTHOG_HOST: ${VITE_POSTHOG_HOST:-https://us.i.posthog.com}
     restart: unless-stopped
     ports:
       - '${APP_PORT:-8080}:8080'
+    depends_on:
+      - api
+
+  # Painel administrativo — app separado, atrás do mesmo backend.
+  #
+  # Em produção, sirva-o num host/subdomínio próprio (`admin.seudominio.com`) e
+  # trate-o como superfície interna: ele expõe banir, remover conta e
+  # impersonar. Restringir por IP/VPN no proxy reverso é barato e vale a pena.
+  admin:
+    image: boilerplate-admin:latest
+    build:
+      context: .
+      dockerfile: apps/admin/Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL:?defina VITE_API_URL no .env}
+        # Para onde o painel manda o admin ao impersonar.
+        VITE_APP_URL: ${VITE_APP_URL:-http://localhost:8080}
+        VITE_SENTRY_DSN: ${VITE_SENTRY_DSN:-}
+    restart: unless-stopped
+    ports:
+      - '${ADMIN_HTTP_PORT:-8081}:8080'
     depends_on:
       - api
 
