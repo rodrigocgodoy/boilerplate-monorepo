@@ -192,7 +192,9 @@ Fila BullMQ sobre Redis, com worker que escala separado da API. Guia completo em
 
 > Duas barreiras precisam conhecer o painel: o **CORS** (`CORS_ORIGINS`) e o **`trustedOrigins`** do Better Auth (`ADMIN_URL`). São mecanismos diferentes — passar só num deles dá `403 Invalid origin` no login, e o sintoma não sugere a causa.
 
-**Primeiro admin:** preencha `ADMIN_EMAILS` no `.env`. Os hooks do Better Auth promovem esses e-mails a `role='admin'` no signup e sincronizam no login.
+**Primeiro admin:** `pnpm admin:create` — pergunta e-mail e senha, cria a conta pela API do Better Auth (mesmo hash, mesmos hooks) e promove a `role='admin'`. Se a conta já existir, só promove. Do segundo em diante, promova pelo próprio painel.
+
+Isso já foi uma variável de ambiente (`ADMIN_EMAILS`) que promovia no login, e era uma segunda fonte da verdade — que mentia: tirar o e-mail da lista **não rebaixava ninguém**. Quem decide é a coluna `users.role`, e agora é o único lugar.
 
 ---
 

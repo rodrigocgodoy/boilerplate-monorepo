@@ -25,11 +25,6 @@ function localeFrom(ctx?: {
   return resolveLanguage(ctx?.headers?.get?.('accept-language') ?? undefined)
 }
 
-/** Se o e-mail está na lista de super-admins (ADMIN_EMAILS). */
-function isAdminEmail(email?: string | null): boolean {
-  return !!email && env.ADMIN_EMAILS.includes(email.toLowerCase())
-}
-
 function slugify(value: string): string {
   return (
     value
@@ -101,8 +96,8 @@ export function createAuthConfig(): BetterAuthOptions {
       // RBAC de plataforma: role de sistema (`admin` | `user`) no usuário, ban e
       // impersonation. Distinto dos papéis por organização (acima). Os endpoints
       // ficam sob `/auth/admin/*` e o front consome via `authClient.admin.*`.
-      // O 1º admin vem de ADMIN_EMAILS (promovido nos databaseHooks). Ver
-      // UPGRADES.md → "RBAC + painel admin".
+      // O 1º admin é criado por `pnpm admin:create`; os demais são promovidos
+      // pelo próprio painel. Ver UPGRADES.md → "RBAC + painel admin".
       admin({
         defaultRole: 'user',
         adminRoles: ['admin'],
@@ -203,15 +198,6 @@ export function createAuthConfig(): BetterAuthOptions {
               where: { id: session.userId },
               select: { name: true, email: true, role: true },
             })
-            // Sincroniza super-admin: promove contas que entraram em
-            // ADMIN_EMAILS depois de criadas. Idempotente, roda a cada login.
-            if (isAdminEmail(user?.email) && user?.role !== 'admin') {
-              await prisma.users.update({
-                where: { id: session.userId },
-                data: { role: 'admin' },
-              })
-            }
-
             const existing = await prisma.member.findFirst({
               where: { userId: session.userId },
               orderBy: { createdAt: 'asc' },

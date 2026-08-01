@@ -105,7 +105,7 @@ resto da área administrativa, e não de uma senha básica paralela que ninguém
 rotaciona. Quem não é admin recebe **404**, não 403: o painel não confirma a
 própria existência para quem não deveria alcançá-lo.
 
-Só é montado quando há `REDIS_URL`. Para virar admin, use `ADMIN_EMAILS`.
+Só é montado quando há `REDIS_URL`. Para virar admin, use `pnpm admin:create`.
 
 ### Graceful shutdown
 
@@ -492,10 +492,33 @@ organização (`owner`/`admin`/`member`, que valem dentro de cada tenant).
 
 ### Primeiro admin (super-admin)
 
-Defina `ADMIN_EMAILS` (lista separada por vírgula) no `.env`. Os hooks do Better
-Auth promovem esses e-mails a `role='admin'` — no signup e, para contas já
-existentes, no próximo login (idempotente). Vazio = nenhum admin automático
-(promova manualmente pelo banco ou por outro admin já existente).
+```bash
+pnpm admin:create                          # pergunta e-mail e senha
+pnpm admin:create --email you@empresa.com  # pergunta só a senha
+```
+
+O comando cria a conta **pela própria API do Better Auth** (mesmo hash de senha,
+mesmos hooks — inclusive a organização pessoal) e promove a `role='admin'`. Se o
+e-mail já tiver conta, só promove, sem pedir senha. Rodar de novo não faz nada.
+
+Não-interativo, para deploy e CI:
+
+```bash
+ADMIN_EMAIL=you@empresa.com ADMIN_PASSWORD='…' pnpm admin:create
+```
+
+Em produção, rode dentro do container:
+`docker compose -f docker-compose.prod.yml run --rm api pnpm admin:create`.
+
+> **Por que um comando e não uma variável de ambiente.** Antes havia um
+> `ADMIN_EMAILS` que promovia no login. Era uma segunda fonte da verdade — e uma
+> que mentia: tirar o e-mail da lista **não rebaixava ninguém**, então a
+> variável dizia quem era admin sem ser quem decidia. Quem decide é a coluna
+> `users.role`, e agora é o único lugar. Virar admin é ato deliberado e raro;
+> merece um comando explícito, não configuração de ambiente que ninguém audita.
+
+Do segundo em diante, promova pelo próprio painel (menu de três pontos →
+"Tornar admin") — sem mexer em env e sem reiniciar nada.
 
 ### Atenção
 

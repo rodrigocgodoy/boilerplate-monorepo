@@ -12,7 +12,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "auth:generate": "npx @better-auth/cli generate --config ./src/utils/auth.ts --output ../../packages/database/prisma/schema.prisma --yes",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "admin:create": "tsx src/scripts/create-admin.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1061.0",

@@ -44,6 +44,19 @@ O frontend é um bundle estático: `VITE_API_URL` e companhia entram no código 
 trocar a URL da API — cada ambiente exige seu próprio build. É a causa nº 1 de
 "o app em produção está chamando a API de staging".
 
+### Primeiro admin em produção
+
+Depois do primeiro deploy, crie o super-admin rodando o comando dentro do
+container — não há variável de ambiente que faça isso:
+
+```bash
+docker compose -f docker-compose.prod.yml run --rm api pnpm admin:create
+# ou, sem terminal interativo (CI):
+ADMIN_EMAIL=you@empresa.com ADMIN_PASSWORD='…' … pnpm admin:create
+```
+
+O comando é idempotente: rodar de novo com o mesmo e-mail não faz nada.
+
 ### Observabilidade no deploy
 
 Duas coisas que só fazem sentido no momento do deploy:
