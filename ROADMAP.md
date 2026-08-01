@@ -130,8 +130,8 @@ Ideias priorizadas para evoluir este boilerplate de **monorepo SaaS**. Cada item
 - Painel `/admin` (`_app/admin`) guardado pela role de sistema: gestão de
   usuários (busca/paginação), trocar role, ban/unban (motivo + expiração),
   impersonar, revogar sessões e remover. Banner global de impersonation.
-- **Primeiro admin** via `ADMIN_EMAILS` (promovido no signup e sincronizado no
-  login). Endpoints sob `/auth/admin/*` (sem módulo de API/Kubb próprio).
+- **Primeiro admin** via `pnpm admin:create` (cria ou promove; idempotente).
+  Os demais são promovidos pelo próprio painel. Endpoints sob `/auth/admin/*`.
 - **Próximos passos:** permissões finas (`ac`/`roles` do plugin) e E2E
   autenticado do painel (depende do banco de teste — ver `TESTING.md`).
 

@@ -70,11 +70,6 @@ export const serverEnvSchema = z.object({
   // autenticação têm limites próprios (do Better Auth) e o webhook é isento —
   // ver `apps/api/src/plugin.ts`.
   RATE_LIMIT_MAX: z.coerce.number().int().positive().default(100),
-  // RBAC de plataforma (plugin `admin` do Better Auth). Lista de e-mails que
-  // viram super-admin (role de sistema `admin`): são promovidos no signup e
-  // sincronizados no login. Separe por vírgula. Vazio = nenhum admin automático
-  // (promova manualmente pelo painel/banco). Ver UPGRADES.md.
-  ADMIN_EMAILS: csv.transform(list => list.map(e => e.toLowerCase())),
   // Google OAuth — opcionais (deixe vazio para usar só email/senha)
   GOOGLE_CLIENT_ID: z.string().default(''),
   GOOGLE_CLIENT_SECRET: z.string().default(''),
