@@ -43,6 +43,7 @@ Por que cada peça está aqui, e o que foi descartado no caminho.
 | Pacote | Responsabilidade |
 |---|---|
 | `apps/app` | Vite + React 19 + TanStack Router/Query (login + página autenticada) |
+| `apps/admin` | Painel administrativo — app separado, gestão de usuários e impersonação |
 | `apps/api` | Fastify + Zod + Better Auth, gera `openapi.yaml` automaticamente |
 | `packages/api-client` | Kubb gera hooks React Query a partir do `openapi.yaml` |
 | `packages/database` | Prisma + adapter-pg (somente modelos do Better Auth) |
@@ -77,6 +78,7 @@ Mudou ou adicionou rota? `pnpm openapi && pnpm api-client`. Qualquer divergênci
 ```
 .
 ├── apps
+│   ├── admin               # painel administrativo (app separado)
 │   ├── api                 # Fastify + Zod + Better Auth
 │   └── app                 # Vite + React 19 + TanStack
 ├── packages
@@ -175,6 +177,22 @@ Fila BullMQ sobre Redis, com worker que escala separado da API. Guia completo em
 **O painel usa a autenticação que já existe.** Bull Board em `/admin/queues`, atrás da mesma role de plataforma que guarda o `/admin`. Ele expõe payloads reais — e-mails, corpos de webhook, ids de usuário —, então merece o mesmo nível de proteção do resto da área administrativa, e não uma senha básica paralela que ninguém rotaciona. Quem não é admin recebe 404: o painel não confirma a própria existência.
 
 **O worker termina o que começou.** `stop()` fecha o worker sem `force`, e o teto de tempo é configurável (`JOBS_SHUTDOWN_TIMEOUT_MS`, default 30s) para caber na janela do orquestrador. Matar o processo no meio de um job devolve ele à fila: em handler idempotente isso é desperdício, nos demais é efeito duplicado.
+
+---
+
+## Painel administrativo
+
+`apps/admin` — app separado, em porta própria (`:5174` em dev), com tabela de usuários, busca, paginação e um menu por linha: trocar papel, banir/desbanir, revogar sessões, impersonar e remover conta.
+
+**Por que app separado e não uma rota do produto.** O painel expõe banir, remover conta e virar outro usuário — superfície de risco diferente do produto. Separado, ele ganha um host próprio que dá para restringir por IP ou VPN no proxy reverso, o bundle do cliente não carrega código de administração, e um bug no painel não derruba o app dos usuários. Também deixa de existir a tentação de reaproveitar componentes do produto em telas que precisam de outra ergonomia.
+
+**Sem i18n, de propósito.** É ferramenta interna de um time; traduzir seria custo sem retorno. As strings ficam em pt-BR no componente. O produto continua com `@repo/i18n` e três idiomas.
+
+**Impersonação atravessa os dois apps.** Impersonar existe para *ver o que o usuário vê*, e isso acontece no produto — então o painel troca a sessão e redireciona para o app, onde um banner avisa em que identidade você está e oferece o retorno. Ao encerrar, você volta para o painel.
+
+> Duas barreiras precisam conhecer o painel: o **CORS** (`CORS_ORIGINS`) e o **`trustedOrigins`** do Better Auth (`ADMIN_URL`). São mecanismos diferentes — passar só num deles dá `403 Invalid origin` no login, e o sintoma não sugere a causa.
+
+**Primeiro admin:** preencha `ADMIN_EMAILS` no `.env`. Os hooks do Better Auth promovem esses e-mails a `role='admin'` no signup e sincronizam no login.
 
 ---
 

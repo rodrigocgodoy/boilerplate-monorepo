@@ -269,6 +269,9 @@ export function createAuthConfig(): BetterAuthOptions {
         httpOnly: true,
       },
     },
-    trustedOrigins: [env.APP_URL],
+    // Duas origens: o produto e o painel administrativo (app separado).
+    // Endpoints mutantes do Better Auth recusam origem fora desta lista com
+    // 403 "Invalid origin" — é proteção CSRF, independente do CORS.
+    trustedOrigins: [env.APP_URL, env.ADMIN_URL],
   } satisfies BetterAuthOptions
 }

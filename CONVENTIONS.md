@@ -159,6 +159,17 @@ Sem isso o front fica com contrato velho. **Nunca edite `packages/api-client/gen
 
 ---
 
+## 3.1 Onde uma tela nova deve morar
+
+- **Produto** (o que o cliente usa) → `apps/app`. Com i18n, analytics e o
+  design system.
+- **Administração de plataforma** (o que o time usa sobre os clientes) →
+  `apps/admin`. Sem i18n, sem analytics de produto, e tratado como superfície
+  interna.
+
+A pergunta que separa os dois: *quem é o usuário desta tela?* Se a resposta for
+"nós", vai para o admin.
+
 ## 4. Frontend
 
 - **Sempre os hooks gerados:** `import { useGetCurrentUser } from '@repo/api-client/hooks'`.

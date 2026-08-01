@@ -29,7 +29,6 @@ function Dashboard() {
     'payment',
     'subscription',
     'organization',
-    'admin',
     'audit',
     'apiKeys',
     'account',
@@ -38,9 +37,6 @@ function Dashboard() {
   const queryClient = useQueryClient()
   const { data, isLoading } = useGetCurrentUser()
   const me = data?.data
-  const { data: session } = authClient.useSession()
-  const isAdmin =
-    (session?.user as { role?: string | null } | undefined)?.role === 'admin'
   // Exemplo de feature flag do PostHog (#15) — habilite "beta-banner" no painel.
   const betaEnabled = useFeatureFlag('beta-banner')
 
@@ -61,11 +57,6 @@ function Dashboard() {
         <div className="flex items-center gap-2">
           <NotificationBell />
           <OrgSwitcher />
-          {isAdmin && (
-            <Button asChild variant="outline" size="sm">
-              <Link to="/admin">{t('admin:nav')}</Link>
-            </Button>
-          )}
           <Button asChild variant="outline" size="sm">
             <Link to="/organization">{t('organization:members')}</Link>
           </Button>

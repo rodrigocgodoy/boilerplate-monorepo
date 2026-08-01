@@ -54,6 +54,10 @@ export const serverEnvSchema = z.object({
   BETTER_AUTH_SECRET: z.string(),
   BETTER_AUTH_URL: z.string(),
   APP_URL: z.string(),
+  // URL do painel administrativo (app separado). Precisa entrar no
+  // `trustedOrigins` do Better Auth **e** no CORS: são duas barreiras
+  // diferentes, e passar só numa dá 403 "Invalid origin" no login.
+  ADMIN_URL: z.string().default('http://localhost:5174'),
   PORT: z.coerce.number().default(3333),
   HOST: z.string().default('0.0.0.0'),
   DATABASE_URL: z.string(),

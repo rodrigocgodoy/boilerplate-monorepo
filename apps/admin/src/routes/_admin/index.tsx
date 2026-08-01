@@ -1,3 +1,4 @@
+import { env } from '@repo/env/client'
 import { Badge } from '@repo/ui/components/badge'
 import { Button } from '@repo/ui/components/button'
 import {
@@ -34,13 +35,12 @@ import {
 } from '@repo/ui/components/table'
 import { authClient } from '@repo/utils/auth-client'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { createFileRoute, useRouter } from '@tanstack/react-router'
+import { createFileRoute } from '@tanstack/react-router'
 import { MoreHorizontal } from 'lucide-react'
 import { type FormEvent, useState } from 'react'
-import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 
-export const Route = createFileRoute('/_app/admin/')({
+export const Route = createFileRoute('/_admin/')({
   component: AdminUsersPage,
 })
 
@@ -56,9 +56,7 @@ type AdminUser = {
 }
 
 function AdminUsersPage() {
-  const { t, i18n } = useTranslation('admin')
   const qc = useQueryClient()
-  const router = useRouter()
 
   const { data: session } = authClient.useSession()
   const meId = session?.user.id
@@ -108,17 +106,14 @@ function AdminUsersPage() {
   /** Executa uma ação do plugin admin e trata erro/sucesso de forma uniforme. */
   async function run(
     action: () => Promise<{ error?: { message?: string } | null }>,
-    successKey:
-      | 'toasts.roleChanged'
-      | 'toasts.unbanned'
-      | 'toasts.sessionsRevoked',
+    successMessage: string,
   ) {
     const res = await action()
     if (res.error) {
-      toast.error(res.error.message ?? t('actionFailed'))
+      toast.error(res.error.message ?? 'Não foi possível concluir a ação.')
       return false
     }
-    toast.success(t(successKey))
+    toast.success(successMessage)
     refresh()
     return true
   }
@@ -127,48 +122,54 @@ function AdminUsersPage() {
     const next = u.role === 'admin' ? 'user' : 'admin'
     await run(
       () => authClient.admin.setRole({ userId: u.id, role: next }),
-      'toasts.roleChanged',
+      'Papel atualizado.',
     )
   }
 
   async function handleUnban(u: AdminUser) {
     await run(
       () => authClient.admin.unbanUser({ userId: u.id }),
-      'toasts.unbanned',
+      'Usuário desbanido.',
     )
   }
 
   async function handleRevokeSessions(u: AdminUser) {
     await run(
       () => authClient.admin.revokeUserSessions({ userId: u.id }),
-      'toasts.sessionsRevoked',
+      'Sessões revogadas.',
     )
   }
 
   async function handleImpersonate(u: AdminUser) {
     const res = await authClient.admin.impersonateUser({ userId: u.id })
     if (res.error) {
-      toast.error(res.error.message ?? t('actionFailed'))
+      toast.error(res.error.message ?? 'Não foi possível concluir a ação.')
       return
     }
-    // A sessão foi trocada — invalida o cache de sessão do guard e volta ao app.
+    // A sessão do navegador passou a ser a do usuário-alvo. Impersonar existe
+    // para **ver o que ele vê**, e isso acontece no produto — então saímos do
+    // painel e entramos no app, onde o `ImpersonationBanner` avisa em que
+    // sessão você está e oferece o "parar de impersonar".
+    //
+    // `window.location` e não `router.navigate`: é outra origem (outro app),
+    // e o cache do React Query aqui não deve sobreviver à troca de identidade.
     await qc.invalidateQueries({ queryKey: ['session'] })
-    await router.navigate({ to: '/dashboard' })
+    window.location.href = env.VITE_APP_URL
   }
 
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between gap-3">
-        <CardTitle>{t('users')}</CardTitle>
+        <CardTitle>Usuários</CardTitle>
         <form onSubmit={handleSearch} className="flex items-center gap-2">
           <Input
             value={searchInput}
             onChange={e => setSearchInput(e.target.value)}
-            placeholder={t('searchPlaceholder')}
+            placeholder={'Buscar por e-mail...'}
             className="w-56"
           />
           <Button type="submit" variant="outline" size="sm">
-            {t('searchAction')}
+            {'Buscar'}
           </Button>
         </form>
       </CardHeader>
@@ -176,10 +177,10 @@ function AdminUsersPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>{t('columns.user')}</TableHead>
-              <TableHead>{t('columns.role')}</TableHead>
-              <TableHead>{t('columns.status')}</TableHead>
-              <TableHead>{t('columns.createdAt')}</TableHead>
+              <TableHead>Usuário</TableHead>
+              <TableHead>Papel</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Criado em</TableHead>
               <TableHead className="w-10" />
             </TableRow>
           </TableHeader>
@@ -199,7 +200,7 @@ function AdminUsersPage() {
                   colSpan={5}
                   className="text-center text-muted-foreground"
                 >
-                  {t('noUsers')}
+                  {'Nenhum usuário encontrado.'}
                 </TableCell>
               </TableRow>
             ) : (
@@ -219,31 +220,25 @@ function AdminUsersPage() {
                       <Badge
                         variant={u.role === 'admin' ? 'default' : 'secondary'}
                       >
-                        {t(`roles.${u.role === 'admin' ? 'admin' : 'user'}`)}
+                        {u.role === 'admin' ? 'Admin' : 'Usuário'}
                       </Badge>
                     </TableCell>
                     <TableCell>
                       {u.banned ? (
-                        <Badge variant="destructive">
-                          {t('status.banned')}
-                        </Badge>
+                        <Badge variant="destructive">{'Banido'}</Badge>
                       ) : (
-                        <Badge variant="outline">{t('status.active')}</Badge>
+                        <Badge variant="outline">Ativo</Badge>
                       )}
                     </TableCell>
                     <TableCell className="text-muted-foreground text-sm">
-                      {new Date(u.createdAt).toLocaleDateString(
-                        i18n.resolvedLanguage,
-                      )}
+                      {new Date(u.createdAt).toLocaleDateString('pt-BR')}
                     </TableCell>
                     <TableCell className="text-right">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="icon">
                             <MoreHorizontal className="size-4" />
-                            <span className="sr-only">
-                              {t('columns.actions')}
-                            </span>
+                            <span className="sr-only">{'Ações'}</span>
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="min-w-44">
@@ -251,31 +246,31 @@ function AdminUsersPage() {
                             onSelect={() => handleToggleRole(u)}
                           >
                             {u.role === 'admin'
-                              ? t('actions.removeAdmin')
-                              : t('actions.makeAdmin')}
+                              ? 'Remover admin'
+                              : 'Tornar admin'}
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             disabled={isSelf}
                             onSelect={() => handleImpersonate(u)}
                           >
-                            {t('actions.impersonate')}
+                            {'Impersonar'}
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             onSelect={() => handleRevokeSessions(u)}
                           >
-                            {t('actions.revokeSessions')}
+                            {'Revogar sessões'}
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           {u.banned ? (
                             <DropdownMenuItem onSelect={() => handleUnban(u)}>
-                              {t('actions.unban')}
+                              {'Desbanir'}
                             </DropdownMenuItem>
                           ) : (
                             <DropdownMenuItem
                               disabled={isSelf}
                               onSelect={() => setBanTarget(u)}
                             >
-                              {t('actions.ban')}
+                              {'Banir'}
                             </DropdownMenuItem>
                           )}
                           <DropdownMenuItem
@@ -283,7 +278,7 @@ function AdminUsersPage() {
                             disabled={isSelf}
                             onSelect={() => setDeleteTarget(u)}
                           >
-                            {t('actions.delete')}
+                            {'Remover usuário'}
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -298,7 +293,7 @@ function AdminUsersPage() {
         {/* Paginação */}
         <div className="flex items-center justify-between">
           <span className="text-muted-foreground text-sm">
-            {t('pagination.showing', { from, to, total })}
+            {`Mostrando ${from}–${to} de ${total}`}
           </span>
           <div className="flex items-center gap-2">
             <Button
@@ -307,7 +302,7 @@ function AdminUsersPage() {
               disabled={page === 0 || isFetching}
               onClick={() => setPage(p => Math.max(0, p - 1))}
             >
-              {t('pagination.prev')}
+              {'Anterior'}
             </Button>
             <Button
               variant="outline"
@@ -315,7 +310,7 @@ function AdminUsersPage() {
               disabled={!hasNext || isFetching}
               onClick={() => setPage(p => p + 1)}
             >
-              {t('pagination.next')}
+              {'Próxima'}
             </Button>
           </div>
         </div>
@@ -344,7 +339,6 @@ function BanDialog({
   onClose: () => void
   onBanned: () => void
 }) {
-  const { t } = useTranslation('admin')
   const [reason, setReason] = useState('')
   const [days, setDays] = useState('')
   const [busy, setBusy] = useState(false)
@@ -360,10 +354,10 @@ function BanDialog({
     })
     setBusy(false)
     if (res.error) {
-      toast.error(res.error.message ?? t('actionFailed'))
+      toast.error(res.error.message ?? 'Não foi possível concluir a ação.')
       return
     }
-    toast.success(t('toasts.banned'))
+    toast.success('Usuário banido.')
     setReason('')
     setDays('')
     onBanned()
@@ -374,42 +368,42 @@ function BanDialog({
     <Dialog open={!!user} onOpenChange={open => !open && onClose()}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{t('ban.title')}</DialogTitle>
+          <DialogTitle>Banir usuário</DialogTitle>
           <DialogDescription>
-            {t('ban.description', { email: user?.email ?? '' })}
+            {'Bloquear o acesso de {{email}}. As sessões são revogadas.'}
           </DialogDescription>
         </DialogHeader>
         <div className="flex flex-col gap-4 py-2">
           <div className="flex flex-col gap-2">
-            <Label htmlFor="ban-reason">{t('ban.reason')}</Label>
+            <Label htmlFor="ban-reason">Motivo</Label>
             <Input
               id="ban-reason"
               value={reason}
               onChange={e => setReason(e.target.value)}
-              placeholder={t('ban.reasonPlaceholder')}
+              placeholder={'Opcional'}
             />
           </div>
           <div className="flex flex-col gap-2">
-            <Label htmlFor="ban-days">{t('ban.duration')}</Label>
+            <Label htmlFor="ban-days">Duração (dias)</Label>
             <Input
               id="ban-days"
               type="number"
               min={0}
               value={days}
               onChange={e => setDays(e.target.value)}
-              placeholder={t('ban.durationPlaceholder')}
+              placeholder={'0'}
             />
             <span className="text-muted-foreground text-xs">
-              {t('ban.durationHint')}
+              {'Deixe 0 ou vazio para banimento permanente.'}
             </span>
           </div>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose} disabled={busy}>
-            {t('cancel')}
+            {'Cancelar'}
           </Button>
           <Button variant="destructive" onClick={handleBan} disabled={busy}>
-            {busy ? t('ban.banning') : t('ban.confirm')}
+            {busy ? 'Banindo...' : 'Banir'}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -426,7 +420,6 @@ function DeleteDialog({
   onClose: () => void
   onDeleted: () => void
 }) {
-  const { t } = useTranslation('admin')
   const [busy, setBusy] = useState(false)
 
   async function handleDelete() {
@@ -435,10 +428,10 @@ function DeleteDialog({
     const res = await authClient.admin.removeUser({ userId: user.id })
     setBusy(false)
     if (res.error) {
-      toast.error(res.error.message ?? t('actionFailed'))
+      toast.error(res.error.message ?? 'Não foi possível concluir a ação.')
       return
     }
-    toast.success(t('toasts.userDeleted'))
+    toast.success('Usuário removido.')
     onDeleted()
     onClose()
   }
@@ -447,17 +440,17 @@ function DeleteDialog({
     <Dialog open={!!user} onOpenChange={open => !open && onClose()}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{t('delete.title')}</DialogTitle>
+          <DialogTitle>Remover usuário</DialogTitle>
           <DialogDescription>
-            {t('delete.description', { email: user?.email ?? '' })}
+            {'Remover {{email}} permanentemente? Esta ação é irreversível.'}
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
           <Button variant="outline" onClick={onClose} disabled={busy}>
-            {t('cancel')}
+            {'Cancelar'}
           </Button>
           <Button variant="destructive" onClick={handleDelete} disabled={busy}>
-            {busy ? t('delete.deleting') : t('delete.confirm')}
+            {busy ? 'Removendo...' : 'Remover'}
           </Button>
         </DialogFooter>
       </DialogContent>

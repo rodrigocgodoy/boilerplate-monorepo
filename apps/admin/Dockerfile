@@ -1,8 +1,8 @@
 # syntax=docker/dockerfile:1
 #
-# Imagem do app (Vite + React) — SPA estática servida por nginx.
+# Imagem do painel administrativo (Vite + React) — SPA estática servida por nginx.
 #
-#   docker build -f apps/app/Dockerfile -t boilerplate-app \
+#   docker build -f apps/app/Dockerfile -t boilerplate-admin \
 #     --build-arg VITE_API_URL=https://api.seudominio.com .
 #
 # Contexto de build = raiz do monorepo.
@@ -24,7 +24,7 @@ ENV PATH=$PNPM_HOME:$PATH
 # hooks que o app importa (`packages/api-client/gen` é gitignored).
 FROM base AS pruner
 COPY . .
-RUN pnpm dlx turbo@2.7.6 prune @repo/app @repo/api --docker
+RUN pnpm dlx turbo@2.7.6 prune @repo/admin @repo/api --docker
 
 # ── Dependências ─────────────────────────────────────────────────────────────
 FROM base AS deps
@@ -44,15 +44,15 @@ COPY --from=pruner /app/out/full/ .
 # Segredo de verdade nunca deve ter o prefixo `VITE_`, justamente porque tudo
 # que o tem acaba no browser.
 ARG VITE_API_URL=http://localhost:3333
-# URL do painel: para onde o banner volta ao encerrar uma impersonação.
-ARG VITE_ADMIN_URL=http://localhost:5174
+# URL do app: o painel redireciona para lá ao impersonar.
+ARG VITE_APP_URL=http://localhost:5173
 ARG VITE_SENTRY_DSN=
 ARG VITE_SENTRY_ENVIRONMENT=production
 ARG VITE_SENTRY_TRACES_SAMPLE_RATE=0
 ARG VITE_POSTHOG_KEY=
 ARG VITE_POSTHOG_HOST=https://us.i.posthog.com
 ENV VITE_API_URL=$VITE_API_URL \
-    VITE_ADMIN_URL=$VITE_ADMIN_URL \
+    VITE_APP_URL=$VITE_APP_URL \
     VITE_SENTRY_DSN=$VITE_SENTRY_DSN \
     VITE_SENTRY_ENVIRONMENT=$VITE_SENTRY_ENVIRONMENT \
     VITE_SENTRY_TRACES_SAMPLE_RATE=$VITE_SENTRY_TRACES_SAMPLE_RATE \
@@ -81,7 +81,7 @@ ENV SENTRY_ORG=$SENTRY_ORG \
     SENTRY_PROJECT=$SENTRY_PROJECT
 RUN --mount=type=secret,id=sentry_token,required=false \
     SENTRY_AUTH_TOKEN="$(cat /run/secrets/sentry_token 2>/dev/null || true)" \
-    pnpm build --filter=@repo/app
+    pnpm build --filter=@repo/admin
 
 # ── Runtime: nginx ───────────────────────────────────────────────────────────
 # O resultado do build é HTML/CSS/JS estático — não há Node em runtime. nginx
@@ -89,8 +89,8 @@ RUN --mount=type=secret,id=sentry_token,required=false \
 # mesmos arquivos, e trata cache, gzip e fallback de SPA sem código nosso.
 FROM nginx:1.27-alpine AS app
 
-COPY apps/app/nginx.conf /etc/nginx/conf.d/default.conf
-COPY --from=builder /app/apps/app/dist /usr/share/nginx/html
+COPY apps/admin/nginx.conf /etc/nginx/conf.d/default.conf
+COPY --from=builder /app/apps/admin/dist /usr/share/nginx/html
 
 # Os `.map` são gerados como `hidden` (sem referência no bundle) para o upload
 # ao Sentry, mas não podem ser servidos: publicá-los entrega o código-fonte

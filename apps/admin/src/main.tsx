@@ -1,0 +1,74 @@
+import './styles/global.css'
+
+import { setupApiClient } from '@repo/api-client/setup'
+import { Toaster } from '@repo/ui/components/sonner'
+import {
+  keepPreviousData,
+  QueryClient,
+  QueryClientProvider,
+} from '@tanstack/react-query'
+import { createRouter, RouterProvider } from '@tanstack/react-router'
+import { StrictMode } from 'react'
+import ReactDOM from 'react-dom/client'
+import { initObservability, ObservabilityBoundary } from './observability'
+import { routeTree } from './routeTree.gen'
+
+// Observabilidade (Sentry) — no-op sem VITE_SENTRY_DSN. Antes do render.
+//
+// Sem PostHog aqui, de propósito: analytics de produto mede comportamento de
+// **cliente**. Rastrear o que o time faz no painel interno inflaria as métricas
+// do produto com ruído e mandaria dado de operação para uma ferramenta de
+// produto.
+initObservability()
+
+setupApiClient()
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+      placeholderData: keepPreviousData,
+    },
+  },
+})
+
+const router = createRouter({
+  routeTree,
+  context: { queryClient },
+  defaultPreload: 'intent',
+  scrollRestoration: true,
+  defaultStructuralSharing: true,
+  defaultPreloadStaleTime: 30_000,
+})
+
+declare module '@tanstack/react-router' {
+  interface Register {
+    router: typeof router
+  }
+}
+
+function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <RouterProvider router={router} />
+      <Toaster />
+    </QueryClientProvider>
+  )
+}
+
+const rootElement = document.getElementById('root')
+
+if (!rootElement) {
+  throw new Error('Failed to find the root element')
+}
+
+if (!rootElement.innerHTML) {
+  const root = ReactDOM.createRoot(rootElement)
+  root.render(
+    <StrictMode>
+      <ObservabilityBoundary>
+        <App />
+      </ObservabilityBoundary>
+    </StrictMode>,
+  )
+}
